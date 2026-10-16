@@ -601,7 +601,9 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let session = null;
 let myProfile = null;
 let myPrivate = null;
-let cache = { posts: [], profilesById: {}, participantsByPost: {}, dmThreads: [] };
+let cache = { posts: [], profilesById: {}, participantsByPost: {}, dmThreads: [], friendships: [] };
+let chatsSubTab = 'chats'; // 'chats' | 'friends'
+let friendshipsChannel = null;
 
 /* ================= DATA (categories / i18n helpers, unchanged) ================= */
 const CATEGORIES = [
@@ -729,6 +731,17 @@ const TRANSLATIONS = {
     edit_post_title:'Editar publicación', save_changes_btn:'Guardar cambios',
     feedback_label:'¿Ideas o sugerencias?', feedback_btn:'Enviar feedback', feedback_subject:'Sugerencia para EnganChat',
     feedback_body:'Hola, quería comentar lo siguiente sobre EnganChat:',
+    subtab_chats:'Chats', subtab_friends:'Amigos',
+    friend_search_ph:'Busca por nickname...',
+    friend_search_hint:'Escribe al menos 2 letras del nickname de alguien para encontrarlo.',
+    friend_add:'Añadir', friend_pending:'Pendiente', friend_accept:'Aceptar', friend_reject:'Rechazar',
+    friend_friends_badge:'Amigos ✓', friend_cancel:'Cancelar',
+    friend_requests_title:'Solicitudes recibidas',
+    friend_list_title:'Tus amigos',
+    friend_list_empty:'Aún no tienes amigos añadidos.',
+    friend_list_empty_sub:'Búscalos arriba por su nickname para empezar.',
+    friend_remove_title:'Eliminar amigo', friend_remove_msg:'Dejaréis de ser amigos. Podréis volver a añadiros más adelante.', friend_remove_btn:'Eliminar',
+    friend_no_results:'No se ha encontrado a nadie con ese nickname.',
   },
   ca: {
     cat_futbol:'Futbol', cat_basquet:'Bàsquet', cat_voley:'Vòlei', cat_running:'Running', cat_padel:'Pàdel',
@@ -817,6 +830,17 @@ const TRANSLATIONS = {
     edit_post_title:'Editar publicació', save_changes_btn:'Desar canvis',
     feedback_label:'Idees o suggeriments?', feedback_btn:'Enviar feedback', feedback_subject:'Suggeriment per a EnganChat',
     feedback_body:'Hola, volia comentar el següent sobre EnganChat:',
+    subtab_chats:'Xats', subtab_friends:'Amics',
+    friend_search_ph:'Cerca per nickname...',
+    friend_search_hint:'Escriu almenys 2 lletres del nickname d\'algú per trobar-lo.',
+    friend_add:'Afegir', friend_pending:'Pendent', friend_accept:'Acceptar', friend_reject:'Rebutjar',
+    friend_friends_badge:'Amics ✓', friend_cancel:'Cancel·lar',
+    friend_requests_title:'Sol·licituds rebudes',
+    friend_list_title:'Els teus amics',
+    friend_list_empty:'Encara no tens amics afegits.',
+    friend_list_empty_sub:'Cerca\'ls a dalt pel seu nickname per començar.',
+    friend_remove_title:'Eliminar amic', friend_remove_msg:'Deixareu de ser amics. Podreu tornar-vos a afegir més endavant.', friend_remove_btn:'Eliminar',
+    friend_no_results:'No s\'ha trobat ningú amb aquest nickname.',
   },
   en: {
     cat_futbol:'Football', cat_basquet:'Basketball', cat_voley:'Volleyball', cat_running:'Running', cat_padel:'Padel',
@@ -905,6 +929,17 @@ const TRANSLATIONS = {
     edit_post_title:'Edit post', save_changes_btn:'Save changes',
     feedback_label:'Ideas or suggestions?', feedback_btn:'Send feedback', feedback_subject:'Feedback for EnganChat',
     feedback_body:'Hi, I wanted to share the following about EnganChat:',
+    subtab_chats:'Chats', subtab_friends:'Friends',
+    friend_search_ph:'Search by nickname...',
+    friend_search_hint:'Type at least 2 letters of someone\'s nickname to find them.',
+    friend_add:'Add', friend_pending:'Pending', friend_accept:'Accept', friend_reject:'Reject',
+    friend_friends_badge:'Friends ✓', friend_cancel:'Cancel',
+    friend_requests_title:'Friend requests',
+    friend_list_title:'Your friends',
+    friend_list_empty:'You haven\'t added any friends yet.',
+    friend_list_empty_sub:'Search for them above by their nickname to get started.',
+    friend_remove_title:'Remove friend', friend_remove_msg:'You\'ll no longer be friends. You can add each other again later.', friend_remove_btn:'Remove',
+    friend_no_results:'No one found with that nickname.',
   }
 };
 function t(key, vars){
@@ -1166,8 +1201,10 @@ async function logout(){
   const ok = await showConfirm(t('profile_logout'), t('logout_confirm'), t('profile_logout'));
   if(!ok) return;
   await sb.auth.signOut();
+  unsubscribeFriendshipsRealtime();
   session = null; myProfile = null; myPrivate = null;
-  cache = { posts: [], profilesById: {}, participantsByPost: {}, dmThreads: [] };
+  cache = { posts: [], profilesById: {}, participantsByPost: {}, dmThreads: [], friendships: [] };
+  chatsSubTab = 'chats';
   closeScreen('profileScreen');
   document.getElementById('onboarding').style.display = 'flex';
   document.getElementById('loginNickname').value = '';
@@ -1188,11 +1225,12 @@ async function loadMyProfile(){
 /* ================= DATA REFRESH ================= */
 async function refreshData(){
   if(!myProfile) return;
-  const [{data:posts}, {data:profiles}, {data:parts}, {data:dms}] = await Promise.all([
+  const [{data:posts}, {data:profiles}, {data:parts}, {data:dms}, {data:friendships}] = await Promise.all([
     sb.from('posts').select('*').order('created_at', {ascending:false}),
     sb.from('profiles').select('*'),
     sb.from('post_participants').select('post_id,user_id'),
-    sb.from('dm_threads').select('*').or(`user_a.eq.${myProfile.id},user_b.eq.${myProfile.id}`)
+    sb.from('dm_threads').select('*').or(`user_a.eq.${myProfile.id},user_b.eq.${myProfile.id}`),
+    sb.from('friendships').select('*')
   ]);
   cache.posts = posts || [];
   cache.profilesById = {};
@@ -1203,13 +1241,94 @@ async function refreshData(){
     cache.participantsByPost[row.post_id].add(row.user_id);
   });
   cache.dmThreads = dms || [];
+  cache.friendships = friendships || [];
+  updateChatsDot();
   renderFeed();
+}
+async function refreshFriendships(){
+  if(!myProfile) return;
+  const {data} = await sb.from('friendships').select('*');
+  cache.friendships = data || [];
+  await ensureProfilesCached(cache.friendships.flatMap(f=>[f.requester_id, f.addressee_id]));
+  updateChatsDot();
+  if(state.tab === 'chats') renderFeed();
+}
+function updateChatsDot(){
+  const dot = document.getElementById('chatsDot');
+  if(!dot) return;
+  dot.style.display = pendingReceivedRequests().length > 0 ? 'block' : 'none';
+}
+function subscribeFriendshipsRealtime(){
+  unsubscribeFriendshipsRealtime();
+  if(!myProfile) return;
+  friendshipsChannel = sb
+    .channel(`friendships-${myProfile.id}`)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'friendships', filter: `requester_id=eq.${myProfile.id}` }, refreshFriendships)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'friendships', filter: `addressee_id=eq.${myProfile.id}` }, refreshFriendships)
+    .subscribe();
+}
+function unsubscribeFriendshipsRealtime(){
+  if(friendshipsChannel){ sb.removeChannel(friendshipsChannel); friendshipsChannel = null; }
+}
+/* ---- friendship helpers ---- */
+function friendshipRowWith(uid){
+  return cache.friendships.find(f =>
+    (f.requester_id===myProfile.id && f.addressee_id===uid) ||
+    (f.addressee_id===myProfile.id && f.requester_id===uid)
+  ) || null;
+}
+function friendStatusWith(uid){
+  const row = friendshipRowWith(uid);
+  if(!row) return {status:'none', row:null};
+  if(row.status === 'accepted') return {status:'accepted', row};
+  if(row.requester_id === myProfile.id) return {status:'pending_sent', row};
+  return {status:'pending_received', row};
+}
+function myFriends(){
+  return cache.friendships
+    .filter(f => f.status === 'accepted')
+    .map(f => f.requester_id===myProfile.id ? f.addressee_id : f.requester_id);
+}
+function pendingReceivedRequests(){
+  return cache.friendships.filter(f => f.status === 'pending' && f.addressee_id === myProfile.id);
+}
+async function sendFriendRequest(targetId){
+  if(!myProfile || targetId === myProfile.id) return;
+  const existing = friendshipRowWith(targetId);
+  if(existing){
+    if(existing.status === 'pending' && existing.requester_id === targetId){
+      // they already sent us one -> just accept it
+      await sb.from('friendships').update({status:'accepted'}).eq('id', existing.id);
+    }
+    // else: already pending/accepted, nothing to do
+  } else {
+    await sb.from('friendships').insert({requester_id: myProfile.id, addressee_id: targetId, status:'pending'});
+  }
+  await refreshFriendships();
+  renderFriendSearchResults();
+}
+async function respondFriendRequest(rowId, accept){
+  if(accept) await sb.from('friendships').update({status:'accepted'}).eq('id', rowId);
+  else await sb.from('friendships').delete().eq('id', rowId);
+  await refreshFriendships();
+}
+async function cancelFriendRequest(rowId){
+  await sb.from('friendships').delete().eq('id', rowId);
+  await refreshFriendships();
+  renderFriendSearchResults();
+}
+async function removeFriend(rowId){
+  const ok = await showConfirm(t('friend_remove_title'), t('friend_remove_msg'), t('friend_remove_btn'));
+  if(!ok) return;
+  await sb.from('friendships').delete().eq('id', rowId);
+  await refreshFriendships();
 }
 async function showApp(){
   document.getElementById('onboarding').style.display = 'none';
   applyI18n();
   renderChips();
   await refreshData();
+  subscribeFriendshipsRealtime();
   renderProfile();
   maybeShowInstall();
 }
@@ -1559,9 +1678,26 @@ let openChatId = null;
 let openChatMessages = [];
 let chatChannel = null;
 
+function setChatsSubTab(sub){
+  chatsSubTab = sub;
+  renderChatsList();
+}
 async function renderChatsList(){
   const main = document.getElementById('mainFeed');
   if(!myProfile){ main.innerHTML = ''; return; }
+  const friendsDot = pendingReceivedRequests().length ? '<span class="navdot" style="top:2px; right:6px;"></span>' : '';
+  main.innerHTML = `
+    <div class="segrow" style="margin-bottom:14px;">
+      <button class="segbtn ${chatsSubTab==='chats'?'active':''}" onclick="setChatsSubTab('chats')">${t('subtab_chats')}</button>
+      <button class="segbtn ${chatsSubTab==='friends'?'active':''}" onclick="setChatsSubTab('friends')" style="position:relative;">${t('subtab_friends')}${friendsDot}</button>
+    </div>
+    <div id="chatsSubContent"></div>`;
+  if(chatsSubTab === 'friends'){ renderFriendsTab(); return; }
+  await renderChatThreadsList();
+}
+async function renderChatThreadsList(){
+  const main = document.getElementById('chatsSubContent');
+  if(!main) return;
   const myPosts = cache.posts.filter(p => isJoined(p) || p.creator_id === myProfile.id);
   const postItems = myPosts.map(p=>{
     const c = catById((p.cats||[])[0]);
@@ -1607,6 +1743,85 @@ async function renderChatsList(){
         <div class="chatlist-preview">${escapeHtml(previewText)}</div>
       </div>
     </div>`;
+  }).join('');
+}
+/* ---- friends tab ---- */
+function friendRowHtml(uid, actionsHtml){
+  const u = cache.profilesById[uid] || {};
+  const name = u.name || '?';
+  const avatarInner = u.photo_url ? ('<img src="' + escapeAttr(u.photo_url) + '" style="width:100%;height:100%;object-fit:cover;">') : escapeHtml(name.charAt(0).toUpperCase());
+  return `
+    <div class="chatlist-row">
+      <div class="chatlist-avatar" style="background:var(--surface-2); color:var(--lime); cursor:pointer; overflow:hidden;" onclick="openUserCard('${uid}')">${avatarInner}</div>
+      <div class="chatlist-main" style="cursor:pointer;" onclick="openUserCard('${uid}')">
+        <div class="chatlist-title">${escapeHtml(name)}</div>
+      </div>
+      <div style="display:flex; gap:6px; flex:0 0 auto;">${actionsHtml}</div>
+    </div>`;
+}
+function renderFriendsTab(){
+  const wrap = document.getElementById('chatsSubContent');
+  if(!wrap) return;
+  const requests = pendingReceivedRequests();
+  const friends = myFriends();
+  let requestsHtml = '';
+  if(requests.length){
+    const rows = requests.map(function(r){
+      const acceptBtn = '<button class="joinbtn joined" style="padding:6px 12px;" onclick="respondFriendRequest(\'' + r.id + '\', true)">' + t('friend_accept') + '</button>';
+      const rejectBtn = '<button class="joinbtn" style="padding:6px 12px;" onclick="respondFriendRequest(\'' + r.id + '\', false)">' + t('friend_reject') + '</button>';
+      return friendRowHtml(r.requester_id, acceptBtn + rejectBtn);
+    }).join('');
+    requestsHtml = '<div style="font-size:12.5px; font-weight:700; color:var(--muted); margin:18px 0 6px;">' + t('friend_requests_title') + '</div>' + rows;
+  }
+  let friendsHtml;
+  if(friends.length){
+    friendsHtml = friends.map(function(uid){
+      const row = friendshipRowWith(uid);
+      const dmBtn = '<button class="joinbtn" style="padding:6px 12px;" onclick="openDmWith(\'' + uid + '\')">💬</button>';
+      const delBtn = '<button class="joinbtn" style="padding:6px 10px; color:var(--coral);" onclick="removeFriend(\'' + row.id + '\')">✕</button>';
+      return friendRowHtml(uid, dmBtn + delBtn);
+    }).join('');
+  } else {
+    friendsHtml = '<div class="empty" style="padding:24px 10px;"><b>' + t('friend_list_empty') + '</b>' + t('friend_list_empty_sub') + '</div>';
+  }
+  wrap.innerHTML = `
+    <div class="field" style="margin-bottom:10px;">
+      <input type="text" id="friendSearchInput" placeholder="${t('friend_search_ph')}" autocapitalize="off" oninput="onFriendSearchInput()">
+    </div>
+    <div id="friendSearchResults"></div>
+    ${requestsHtml}
+    <div style="font-size:12.5px; font-weight:700; color:var(--muted); margin:18px 0 6px;">${t('friend_list_title')}</div>
+    <div id="friendListWrap">${friendsHtml}</div>`;
+}
+let friendSearchTimer = null;
+function onFriendSearchInput(){
+  clearTimeout(friendSearchTimer);
+  friendSearchTimer = setTimeout(searchFriends, 300);
+}
+async function searchFriends(){
+  const input = document.getElementById('friendSearchInput');
+  const results = document.getElementById('friendSearchResults');
+  if(!input || !results) return;
+  const q = normalizeNickname(input.value);
+  if(q.length < 2){ results.innerHTML = q.length ? `<div class="hint" style="padding:6px 2px;">${t('friend_search_hint')}</div>` : ''; return; }
+  const {data} = await sb.from('profiles').select('*').ilike('nickname', `%${q}%`).neq('id', myProfile.id).limit(10);
+  (data||[]).forEach(p=>{ cache.profilesById[p.id] = p; });
+  lastFriendSearchResults = (data||[]).map(p=>p.id);
+  renderFriendSearchResults();
+}
+let lastFriendSearchResults = [];
+function renderFriendSearchResults(){
+  const results = document.getElementById('friendSearchResults');
+  if(!results) return;
+  if(lastFriendSearchResults.length === 0){ results.innerHTML = `<div class="hint" style="padding:6px 2px;">${t('friend_no_results')}</div>`; return; }
+  results.innerHTML = lastFriendSearchResults.map(uid=>{
+    const st = friendStatusWith(uid);
+    let action;
+    if(st.status === 'accepted') action = `<span class="joinbtn joined" style="padding:6px 12px;">${t('friend_friends_badge')}</span>`;
+    else if(st.status === 'pending_sent') action = `<button class="joinbtn" style="padding:6px 12px;" onclick="cancelFriendRequest('${st.row.id}')">${t('friend_pending')} ✕</button>`;
+    else if(st.status === 'pending_received') action = `<button class="joinbtn joined" style="padding:6px 12px;" onclick="respondFriendRequest('${st.row.id}', true)">${t('friend_accept')}</button>`;
+    else action = `<button class="joinbtn" style="padding:6px 12px;" onclick="sendFriendRequest('${uid}')">${t('friend_add')}</button>`;
+    return friendRowHtml(uid, action);
   }).join('');
 }
 async function openChat(type, id){
