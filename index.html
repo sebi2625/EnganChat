@@ -1363,7 +1363,7 @@ function renderFeed(){
           ${p.map_link ? `<a href="${escapeAttr(p.map_link)}" target="_blank" rel="noopener">${t('post_directions')}</a>` : ''}
         </div>
         <div class="post-footer">
-          <div class="creator">
+          <div class="creator" ${(!isOwner && creatorProfile) ? `style="cursor:pointer;" onclick="openUserCard('${p.creator_id}')"` : ''}>
             <span class="flagdot ${creatorProfile && creatorProfile.origin==='intl'?'intl':''}"></span>
             ${escapeHtml(creatorProfile ? creatorProfile.name : '—')}
           </div>
@@ -1695,7 +1695,8 @@ async function sendChatMsg(){
   await loadChatMessages();
 }
 let ucTargetId = null;
-function openUserCard(uid){
+async function openUserCard(uid){
+  await ensureProfilesCached([uid]);
   const u = cache.profilesById[uid];
   if(!u) return;
   ucTargetId = uid;
