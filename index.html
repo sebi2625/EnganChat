@@ -1557,6 +1557,7 @@ async function deletePost(id){
 let openChatType = null; // 'post' | 'dm'
 let openChatId = null;
 let openChatMessages = [];
+let chatChannel = null;
 
 async function renderChatsList(){
   const main = document.getElementById('mainFeed');
@@ -1587,6 +1588,7 @@ async function renderChatsList(){
       return sb.from(table).select('*').eq(col, it.id).order('created_at',{ascending:false}).limit(1);
     }));
   }catch(e){ previews = items.map(()=>({data:[]})); }
+  await ensureProfilesCached(previews.map(p=>p && p.data && p.data[0] && p.data[0].sender_id));
   main.innerHTML = items.map((it,i)=>{
     const last = previews[i] && previews[i].data && previews[i].data[0];
     let previewText = t('chat_first_msg');
@@ -1624,7 +1626,15 @@ async function openChat(type, id){
   }
   document.getElementById('chatDetailTitle').textContent = title;
   await loadChatMessages();
+  subscribeChatRealtime();
   openScreen('chatDetailScreen');
+}
+async function ensureProfilesCached(senderIds){
+  const missing = [...new Set(senderIds)].filter(id => id && !cache.profilesById[id]);
+  if(missing.length === 0) return false;
+  const {data} = await sb.from('profiles').select('*').in('id', missing);
+  (data||[]).forEach(p=>{ cache.profilesById[p.id] = p; });
+  return true;
 }
 async function loadChatMessages(){
   if(openChatType === 'post'){
@@ -1634,7 +1644,27 @@ async function loadChatMessages(){
     const {data} = await sb.from('dm_messages').select('*').eq('thread_id', openChatId).order('created_at',{ascending:true});
     openChatMessages = data || [];
   }
+  await ensureProfilesCached(openChatMessages.map(m=>m.sender_id));
   renderChatMsgs();
+}
+function subscribeChatRealtime(){
+  if(chatChannel){ sb.removeChannel(chatChannel); chatChannel = null; }
+  const table = openChatType === 'post' ? 'post_messages' : 'dm_messages';
+  const col = openChatType === 'post' ? 'post_id' : 'thread_id';
+  chatChannel = sb
+    .channel(`chat-${table}-${openChatId}`)
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table, filter: `${col}=eq.${openChatId}` }, async (payload) => {
+      const m = payload.new;
+      if(m && !openChatMessages.some(x => x.id === m.id)){
+        openChatMessages.push(m);
+        await ensureProfilesCached([m.sender_id]);
+        renderChatMsgs();
+      }
+    })
+    .subscribe();
+}
+function unsubscribeChatRealtime(){
+  if(chatChannel){ sb.removeChannel(chatChannel); chatChannel = null; }
 }
 function renderChatMsgs(){
   const wrap = document.getElementById('chatMsgs');
@@ -1724,6 +1754,7 @@ function openScreen(id){
 function closeScreen(id){
   document.getElementById(id).classList.remove('open');
   if(id === 'profileScreen') cancelEditProfile();
+  if(id === 'chatDetailScreen') unsubscribeChatRealtime();
 }
 
 /* ================= PROFILE (view + inline edit) ================= */
