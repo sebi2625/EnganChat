@@ -343,6 +343,7 @@
   .reasonbtn.active{border-color:var(--lime); color:var(--lime); font-weight:600;}
   .reportwarn{background:color-mix(in srgb, var(--coral) 14%, transparent); border:1px solid var(--coral); color:var(--coral); border-radius:10px; padding:8px 10px; font-size:12.5px; font-weight:600; margin-bottom:14px;}
   .secondary-btn:disabled{opacity:0.5;}
+  #userCardOverlay .modalbox{max-height:92vh; overflow-y:auto;}
   .linkbtn{background:none; border:none; color:var(--lime); font:inherit; font-size:12.5px; font-weight:600; cursor:pointer; padding:0;}
 </style>
 </head>
@@ -608,6 +609,7 @@
       </div>
     </div>
     <div class="reportwarn" id="ucWarn" style="display:none;"></div>
+    <div class="infogrid" id="ucInfo" style="margin-bottom:14px;"></div>
     <button class="primary-btn" onclick="contactFromCard()" data-i18n="contact_btn">Contactar</button>
     <button class="secondary-btn" id="ucReportBtn" style="color:var(--coral); border-color:var(--coral);" onclick="reportFromCard()" data-i18n="report_btn">Reportar</button>
     <button class="secondary-btn" onclick="closeUserCard()" data-i18n="close_btn">Cerrar</button>
@@ -2099,18 +2101,26 @@ async function openChat(type, id){
   openChatType = type;
   openChatId = id;
   let title = '—';
+  let otherId = null;
   if(type === 'post'){
     const post = cache.posts.find(p=>p.id===id);
     if(post) title = post.title;
   } else {
     const thread = cache.dmThreads.find(d=>d.id===id);
     if(thread){
-      const otherId = thread.user_a === myProfile.id ? thread.user_b : thread.user_a;
+      otherId = thread.user_a === myProfile.id ? thread.user_b : thread.user_a;
+      await ensureProfilesCached([otherId]);
       const other = cache.profilesById[otherId];
       if(other) title = other.name;
     }
   }
-  document.getElementById('chatDetailTitle').textContent = title;
+  const ttl = document.getElementById('chatDetailTitle');
+  ttl.textContent = title + ' ›';
+  ttl.style.cursor = 'pointer';
+  ttl.onclick = function(){
+    if(type === 'dm'){ if(otherId) openUserCard(otherId); }
+    else { openParticipants(id); }
+  };
   await loadChatMessages();
   subscribeChatRealtime();
   openScreen('chatDetailScreen');
@@ -2165,7 +2175,7 @@ function renderChatMsgs(){
       }
       const self = m.sender_id === myProfile.id;
       const authorName = self ? '' : ((cache.profilesById[m.sender_id]||{}).name || '?');
-      return `<div class="msg ${self?'self':'other'}">${self?'':`<div class="who">${escapeHtml(authorName)}</div>`}${escapeHtml(m.text)}</div>`;
+      return `<div class="msg ${self?'self':'other'}">${self?'':`<div class="who" style="cursor:pointer;" onclick="openUserCard('${m.sender_id}')">${escapeHtml(authorName)}</div>`}${escapeHtml(m.text)}</div>`;
     }).join('');
   }
   wrap.scrollTop = wrap.scrollHeight;
@@ -2193,6 +2203,14 @@ async function openUserCard(uid){
   document.getElementById('ucSub').textContent = u.uni ? (originLbl + ' · ' + u.uni) : originLbl;
   const avatarWrap = document.getElementById('ucAvatar');
   avatarWrap.innerHTML = u.photo_url ? `<img src="${u.photo_url}">` : `<span>${escapeHtml((u.name||'?').charAt(0).toUpperCase())}</span>`;
+  const sportsHtml = (u.sports && u.sports.length)
+    ? u.sports.map(function(s){ return '<span class="microchip">' + catLabel(catById(s)) + '</span>'; }).join('')
+    : '<span class="microchip">' + t('profile_none') + '</span>';
+  const createdN = cache.posts.filter(function(pp){ return pp.creator_id === uid; }).length;
+  document.getElementById('ucInfo').innerHTML =
+    '<div class="inforow"><span class="k">' + t('reg_lang_label') + '</span><span class="v">' + escapeHtml(u.lang || '—') + '</span></div>' +
+    '<div class="inforow"><span class="k">' + t('profile_sports') + '</span><span class="v"><div class="chipwrap">' + sportsHtml + '</div></span></div>' +
+    '<div class="inforow"><span class="k">' + t('profile_created') + '</span><span class="v">' + createdN + '</span></div>';
   const warn = document.getElementById('ucWarn');
   const nRep = reportCounts[uid] || 0;
   if(nRep > 0){ warn.textContent = t('report_warning', {n: nRep}); warn.style.display = 'block'; }
