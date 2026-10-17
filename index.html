@@ -286,11 +286,11 @@
   #installbar .txt{flex:1;}
 
   /* modal */
-  #modalOverlay, #userCardOverlay, #reportOverlay, #feedbackOverlay, #appealOverlay, #participantsOverlay, #verifyOverlay{
+  #modalOverlay, #userCardOverlay, #reportOverlay, #feedbackOverlay, #appealOverlay, #resetOverlay, #participantsOverlay, #verifyOverlay{
     position:fixed; inset:0; z-index:200; background:rgba(6,11,18,0.66);
     display:none; align-items:flex-end; justify-content:center;
   }
-  #modalOverlay.open, #userCardOverlay.open, #reportOverlay.open, #feedbackOverlay.open, #appealOverlay.open, #participantsOverlay.open, #verifyOverlay.open{display:flex;}
+  #modalOverlay.open, #userCardOverlay.open, #reportOverlay.open, #feedbackOverlay.open, #appealOverlay.open, #resetOverlay.open, #participantsOverlay.open, #verifyOverlay.open{display:flex;}
   .modalbox{
     width:100%; max-width:460px; background:var(--surface);
     border-top-left-radius:20px; border-top-right-radius:20px;
@@ -514,6 +514,7 @@
         <label data-i18n="login_password_label">Contraseña</label>
         <input type="password" id="loginPassword" data-i18n-ph="login_password_ph" placeholder="Tu contraseña">
       </div>
+      <div class="hint" style="margin-top:-4px; margin-bottom:8px;"><a href="#" onclick="openReset(); return false;" style="color:var(--lime);" data-i18n="forgot_link">¿Has olvidado tu contraseña?</a></div>
       <div class="hint" id="loginError" style="color:var(--coral); display:none;"></div>
     </div>
 
@@ -663,6 +664,25 @@
   </div>
 </div>
 
+<!-- RESET PASSWORD -->
+<div id="resetOverlay">
+  <div class="modalbox">
+    <h3 data-i18n="reset_title">Recuperar contraseña</h3>
+    <div class="hint" style="margin-bottom:10px;" data-i18n="reset_hint"></div>
+    <div id="resStep1">
+      <div class="field"><input type="text" id="resNick" maxlength="30" data-i18n-ph="login_nickname_ph" placeholder="Nickname" autocapitalize="off"></div>
+      <button class="primary-btn" id="resSendBtn" onclick="sendResetCode()" data-i18n="reset_send">Enviar código</button>
+    </div>
+    <div id="resStep2" style="display:none;">
+      <div class="field"><input type="text" id="resCode" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="123456"></div>
+      <div class="field"><input type="password" id="resPass" maxlength="72" autocomplete="new-password" data-i18n-ph="reset_newpass_ph" placeholder="Nueva contraseña"></div>
+      <button class="primary-btn" id="resDoBtn" onclick="doResetPassword()" data-i18n="reset_confirm">Cambiar contraseña</button>
+    </div>
+    <div class="vmsg" id="resMsg"></div>
+    <button class="secondary-btn" onclick="closeReset()" data-i18n="modal_cancel_default">Cancelar</button>
+  </div>
+</div>
+
 <!-- REPORT USER -->
 <div id="reportOverlay">
   <div class="modalbox">
@@ -746,12 +766,70 @@ function verMsg(key, ok){
   el.style.color = ok ? 'var(--lime)' : 'var(--coral)';
   el.textContent = t(key);
 }
-async function callVerify(payload){
-  const {data, error} = await sb.functions.invoke('verify-email', {body: payload});
+async function callVerify(payload, fn){
+  const {data, error} = await sb.functions.invoke(fn || 'verify-email', {body: payload});
   if(error && !data){
     try{ const j = await error.context.json(); return j; }catch(e){ return {error:'server_error'}; }
   }
   return data || {error:'server_error'};
+}
+let resetNick = '';
+function openReset(){
+  document.getElementById('resNick').value = document.getElementById('loginNickname').value;
+  document.getElementById('resCode').value = '';
+  document.getElementById('resPass').value = '';
+  document.getElementById('resStep1').style.display = 'block';
+  document.getElementById('resStep2').style.display = 'none';
+  document.getElementById('resMsg').textContent = '';
+  document.getElementById('resetOverlay').classList.add('open');
+}
+function closeReset(){
+  document.getElementById('resetOverlay').classList.remove('open');
+}
+function resShow(text, ok){
+  const el = document.getElementById('resMsg');
+  el.style.color = ok ? 'var(--lime)' : 'var(--coral)';
+  el.textContent = text;
+}
+function resError(code){
+  const own = ['not_verified', 'weak_password', 'bad_nickname'];
+  resShow(t((own.indexOf(code) >= 0 ? 'reset_err_' : 'ver_err_') + code), false);
+}
+async function sendResetCode(){
+  const nick = normalizeNickname(document.getElementById('resNick').value);
+  if(!nick){ resError('bad_nickname'); return; }
+  const btn = document.getElementById('resSendBtn');
+  btn.disabled = true;
+  const res = await callVerify({action:'send', nickname: nick}, 'reset-password');
+  btn.disabled = false;
+  if(res.ok){
+    resetNick = nick;
+    document.getElementById('resStep1').style.display = 'none';
+    document.getElementById('resStep2').style.display = 'block';
+    resShow(t('reset_sent'), true);
+    document.getElementById('resCode').focus();
+  } else {
+    resError(res.error || 'server_error');
+  }
+}
+async function doResetPassword(){
+  const code = document.getElementById('resCode').value.trim();
+  const password = document.getElementById('resPass').value;
+  if(!/^\d{6}$/.test(code)){ resError('bad_code'); return; }
+  if(password.length < 6){ resError('weak_password'); return; }
+  const btn = document.getElementById('resDoBtn');
+  btn.disabled = true;
+  const res = await callVerify({action:'reset', nickname: resetNick, code: code, password: password}, 'reset-password');
+  btn.disabled = false;
+  if(res.ok){
+    closeReset();
+    document.getElementById('loginNickname').value = resetNick;
+    document.getElementById('loginPassword').value = '';
+    setAuthTab('login');
+    showToast(t('reset_ok'), '', null);
+  } else {
+    resError(res.error || 'server_error');
+  }
 }
 async function sendVerifyCode(){
   const email = document.getElementById('verEmail').value.trim();
@@ -953,7 +1031,7 @@ const TRANSLATIONS = {
     report_already:'Reportado ✓', report_error:'No se ha podido enviar el reporte',
     report_warning:'⚠ Acumula {n} reportes de otros usuarios',
     feedback_ph:'Cuéntanos qué mejorarías o qué falla...', feedback_send_btn:'Enviar',
-    feedback_thanks:'¡Gracias!', feedback_thanks_sub:'Hemos recibido tu mensaje.', appeal_notice:'⚠ Tu perfil acumula {n} reportes de otros usuarios y los demás ven un aviso. Si crees que son falsos, puedes apelar.', appeal_btn:'Apelar los reportes', appeal_title:'Apelar los reportes', appeal_desc:'Revisaremos tu caso. Cuéntanos por qué crees que los reportes no son justos.', appeal_ph:'Explica por qué crees que los reportes no son justos...', appeal_send:'Enviar apelación', appeal_pending:'Apelación enviada. La revisaremos pronto.', appeal_thanks:'Apelación enviada', appeal_thanks_sub:'La revisaremos pronto.', appeal_error:'No se ha podido enviar la apelación', feedback_error:'No se ha podido enviar',
+    feedback_thanks:'¡Gracias!', feedback_thanks_sub:'Hemos recibido tu mensaje.', forgot_link:'¿Has olvidado tu contraseña?', reset_title:'Recuperar contraseña', reset_hint:'Te enviaremos un código al correo universitario que verificaste. Solo funciona si tu cuenta está verificada.', reset_send:'Enviar código', reset_sent:'Código enviado a tu correo universitario.', reset_newpass_ph:'Nueva contraseña (mín. 6 caracteres)', reset_confirm:'Cambiar contraseña', reset_ok:'Contraseña cambiada. Ya puedes entrar.', reset_err_not_verified:'Esta cuenta no tiene un correo universitario verificado, así que no se puede recuperar por aquí.', reset_err_weak_password:'La contraseña debe tener al menos 6 caracteres.', reset_err_bad_nickname:'Escribe tu nickname.', blocked_list_title:'Usuarios bloqueados', unblock_short:'Desbloquear', appeal_notice:'⚠ Tu perfil acumula {n} reportes de otros usuarios y los demás ven un aviso. Si crees que son falsos, puedes apelar.', appeal_btn:'Apelar los reportes', appeal_title:'Apelar los reportes', appeal_desc:'Revisaremos tu caso. Cuéntanos por qué crees que los reportes no son justos.', appeal_ph:'Explica por qué crees que los reportes no son justos...', appeal_send:'Enviar apelación', appeal_pending:'Apelación enviada. La revisaremos pronto.', appeal_thanks:'Apelación enviada', appeal_thanks_sub:'La revisaremos pronto.', appeal_error:'No se ha podido enviar la apelación', feedback_error:'No se ha podido enviar',
     post_see_people:'Ver apuntados ({n})', part_organizer:'Organiza', part_you:'tú',
     part_hint:'Toca a alguien para ver su perfil, escribirle o reportarlo.',
   },
@@ -1063,7 +1141,7 @@ const TRANSLATIONS = {
     report_already:'Reportat ✓', report_error:'No s\'ha pogut enviar el report',
     report_warning:'⚠ Acumula {n} reports d\'altres usuaris',
     feedback_ph:'Explica\'ns què milloraries o què falla...', feedback_send_btn:'Enviar',
-    feedback_thanks:'Gràcies!', feedback_thanks_sub:'Hem rebut el teu missatge.', appeal_notice:'⚠ El teu perfil acumula {n} reports d\'altres usuaris i la resta veu un avís. Si creus que són falsos, pots apel·lar.', appeal_btn:'Apel·la els reports', appeal_title:'Apel·la els reports', appeal_desc:'Revisarem el teu cas. Explica\'ns per què creus que els reports no són justos.', appeal_ph:'Explica per què creus que els reports no són justos...', appeal_send:'Envia l\'apel·lació', appeal_pending:'Apel·lació enviada. La revisarem aviat.', appeal_thanks:'Apel·lació enviada', appeal_thanks_sub:'La revisarem aviat.', appeal_error:'No s\'ha pogut enviar l\'apel·lació', feedback_error:'No s\'ha pogut enviar',
+    feedback_thanks:'Gràcies!', feedback_thanks_sub:'Hem rebut el teu missatge.', forgot_link:'Has oblidat la contrasenya?', reset_title:'Recuperar contrasenya', reset_hint:'T\'enviarem un codi al correu universitari que vas verificar. Només funciona si el teu compte està verificat.', reset_send:'Envia el codi', reset_sent:'Codi enviat al teu correu universitari.', reset_newpass_ph:'Nova contrasenya (mín. 6 caràcters)', reset_confirm:'Canvia la contrasenya', reset_ok:'Contrasenya canviada. Ja pots entrar.', reset_err_not_verified:'Aquest compte no té un correu universitari verificat, així que no es pot recuperar per aquí.', reset_err_weak_password:'La contrasenya ha de tenir almenys 6 caràcters.', reset_err_bad_nickname:'Escriu el teu nickname.', blocked_list_title:'Usuaris bloquejats', unblock_short:'Desbloqueja', appeal_notice:'⚠ El teu perfil acumula {n} reports d\'altres usuaris i la resta veu un avís. Si creus que són falsos, pots apel·lar.', appeal_btn:'Apel·la els reports', appeal_title:'Apel·la els reports', appeal_desc:'Revisarem el teu cas. Explica\'ns per què creus que els reports no són justos.', appeal_ph:'Explica per què creus que els reports no són justos...', appeal_send:'Envia l\'apel·lació', appeal_pending:'Apel·lació enviada. La revisarem aviat.', appeal_thanks:'Apel·lació enviada', appeal_thanks_sub:'La revisarem aviat.', appeal_error:'No s\'ha pogut enviar l\'apel·lació', feedback_error:'No s\'ha pogut enviar',
     post_see_people:'Veure apuntats ({n})', part_organizer:'Organitza', part_you:'tu',
     part_hint:'Toca algú per veure el seu perfil, escriure-li o reportar-lo.',
   },
@@ -1173,7 +1251,7 @@ const TRANSLATIONS = {
     report_already:'Reported ✓', report_error:'Couldn\'t send the report',
     report_warning:'⚠ Has {n} reports from other users',
     feedback_ph:'Tell us what you\'d improve or what\'s broken...', feedback_send_btn:'Send',
-    feedback_thanks:'Thank you!', feedback_thanks_sub:'We\'ve received your message.', appeal_notice:'⚠ Your profile has {n} reports from other users and others see a warning. If you think they are false, you can appeal.', appeal_btn:'Appeal the reports', appeal_title:'Appeal the reports', appeal_desc:'We will review your case. Tell us why you think the reports are unfair.', appeal_ph:'Explain why you think the reports are unfair...', appeal_send:'Send appeal', appeal_pending:'Appeal sent. We will review it soon.', appeal_thanks:'Appeal sent', appeal_thanks_sub:'We will review it soon.', appeal_error:'Couldn\'t send the appeal', feedback_error:'Couldn\'t send it',
+    feedback_thanks:'Thank you!', feedback_thanks_sub:'We\'ve received your message.', forgot_link:'Forgot your password?', reset_title:'Reset password', reset_hint:'We\'ll send a code to the university email you verified. It only works if your account is verified.', reset_send:'Send code', reset_sent:'Code sent to your university email.', reset_newpass_ph:'New password (min. 6 characters)', reset_confirm:'Change password', reset_ok:'Password changed. You can sign in now.', reset_err_not_verified:'This account has no verified university email, so it can\'t be recovered here.', reset_err_weak_password:'Password must be at least 6 characters.', reset_err_bad_nickname:'Enter your nickname.', blocked_list_title:'Blocked users', unblock_short:'Unblock', appeal_notice:'⚠ Your profile has {n} reports from other users and others see a warning. If you think they are false, you can appeal.', appeal_btn:'Appeal the reports', appeal_title:'Appeal the reports', appeal_desc:'We will review your case. Tell us why you think the reports are unfair.', appeal_ph:'Explain why you think the reports are unfair...', appeal_send:'Send appeal', appeal_pending:'Appeal sent. We will review it soon.', appeal_thanks:'Appeal sent', appeal_thanks_sub:'We will review it soon.', appeal_error:'Couldn\'t send the appeal', feedback_error:'Couldn\'t send it',
     post_see_people:'See who joined ({n})', part_organizer:'Organiser', part_you:'you',
     part_hint:'Tap someone to view their profile, message or report them.',
   }
@@ -1444,6 +1522,7 @@ async function logout(){
   unreadKeys = new Set(); blockedIds = new Set(); lastReadMap = {}; knownPendingIds = null; hideToast(); reportCounts = {}; myReportedIds = new Set(); myAppealPending = false;
   session = null; myProfile = null; myPrivate = null;
   cache = { posts: [], profilesById: {}, participantsByPost: {}, dmThreads: [], friendships: [] };
+  profilesFetchedAt = 0;
   chatsSubTab = 'chats';
   closeScreen('profileScreen');
   document.getElementById('onboarding').style.display = 'flex';
@@ -1463,27 +1542,48 @@ async function loadMyProfile(){
 }
 
 /* ================= DATA REFRESH ================= */
+let profilesFetchedAt = 0;
+async function fetchProfilesByIds(ids){
+  ids = Array.from(new Set(ids.filter(Boolean)));
+  const chunks = [];
+  for(let i = 0; i < ids.length; i += 100) chunks.push(ids.slice(i, i + 100));
+  const res = await Promise.all(chunks.map(c => sb.from('profiles').select('*').in('id', c)));
+  res.forEach(r => (r.data || []).forEach(p => { cache.profilesById[p.id] = p; }));
+}
 async function refreshData(){
   if(!myProfile) return;
-  const [{data:posts}, {data:profiles}, {data:parts}, {data:dms}, {data:friendships}, {data:blks}] = await Promise.all([
-    sb.from('posts').select('*').order('created_at', {ascending:false}),
-    sb.from('profiles').select('*'),
-    sb.from('post_participants').select('post_id,user_id'),
+  const cut = new Date(); cut.setHours(0,0,0,0); cut.setDate(cut.getDate() - 8);
+  const cutStr = cut.getFullYear() + '-' + String(cut.getMonth() + 1).padStart(2, '0') + '-' + String(cut.getDate()).padStart(2, '0');
+  const [{data:posts}, {data:dms}, {data:friendships}, {data:blks}] = await Promise.all([
+    sb.from('posts').select('*').or('event_date.is.null,event_date.gte.' + cutStr).order('created_at', {ascending:false}).limit(300),
     sb.from('dm_threads').select('*').or(`user_a.eq.${myProfile.id},user_b.eq.${myProfile.id}`),
     sb.from('friendships').select('*'),
     sb.from('blocks').select('blocked_id')
   ]);
   blockedIds = new Set((blks || []).map(b => b.blocked_id));
   cache.posts = posts || [];
-  cache.profilesById = {};
-  (profiles||[]).forEach(p=>{ cache.profilesById[p.id] = p; });
+  const postIds = cache.posts.map(p => p.id);
+  const chunks = [];
+  for(let i = 0; i < postIds.length; i += 100) chunks.push(postIds.slice(i, i + 100));
+  const partRes = await Promise.all(chunks.map(c => sb.from('post_participants').select('post_id,user_id').in('post_id', c)));
   cache.participantsByPost = {};
-  (parts||[]).forEach(row=>{
+  const partUsers = [];
+  partRes.forEach(res => (res.data || []).forEach(row => {
     if(!cache.participantsByPost[row.post_id]) cache.participantsByPost[row.post_id] = new Set();
     cache.participantsByPost[row.post_id].add(row.user_id);
-  });
+    partUsers.push(row.user_id);
+  }));
   cache.dmThreads = dms || [];
   cache.friendships = friendships || [];
+  const ids = [myProfile.id]
+    .concat(cache.posts.map(p => p.creator_id), partUsers, Array.from(blockedIds))
+    .concat(cache.friendships.flatMap(f => [f.requester_id, f.addressee_id]))
+    .concat(cache.dmThreads.flatMap(d => [d.user_a, d.user_b]));
+  const stale = Date.now() - profilesFetchedAt > 300000;
+  const uniq = Array.from(new Set(ids.filter(Boolean)));
+  const need = stale ? uniq : uniq.filter(id => !cache.profilesById[id]);
+  if(need.length){ await fetchProfilesByIds(need); if(stale) profilesFetchedAt = Date.now(); }
+  cache.profilesById[myProfile.id] = myProfile;
   knownPendingIds = new Set(pendingReceivedRequests().map(r=>r.id));
   updateChatsDot();
   renderFeed();
@@ -2407,6 +2507,15 @@ function closeUserCard(){
   document.getElementById('userCardOverlay').classList.remove('open');
   ucTargetId = null;
 }
+async function unblockUser(uid){
+  if(!myProfile) return;
+  const {error} = await sb.from('blocks').delete().eq('blocker_id', myProfile.id).eq('blocked_id', uid);
+  if(error){ showToast(t('block_error'), '', null); return; }
+  blockedIds.delete(uid);
+  showToast(t('unblock_done'), '', null);
+  renderProfile();
+  renderFeed();
+}
 async function toggleBlockFromCard(){
   if(!ucTargetId || !myProfile) return;
   const uid = ucTargetId;
@@ -2602,6 +2711,7 @@ function renderProfile(){
       <div class="inforow"><span class="k">${t('profile_created')}</span><span class="v">${myPosts.length}</span></div>
       <div class="inforow"><span class="k">${t('profile_joined')}</span><span class="v">${joinedCount}</span></div>
     </div>
+    ${blockedIds.size ? `<div class="field" style="margin-top:20px;"><label>${t('blocked_list_title')}</label>${Array.from(blockedIds).map(uid=>{ const bu = cache.profilesById[uid] || {}; return `<div class="chatlist-row"><div class="chatlist-main"><div class="chatlist-title">${escapeHtml(dn(bu))}</div></div><button class="joinbtn" style="padding:6px 12px;" onclick="unblockUser('${uid}')">${t('unblock_short')}</button></div>`; }).join('')}</div>` : ''}
     <div class="field" style="margin-top:20px;">
       <label>${t('app_lang_label')}</label>
       <div class="segrow">
