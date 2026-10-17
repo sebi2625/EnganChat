@@ -333,6 +333,11 @@
   }
 
   ::-webkit-scrollbar{width:0;height:0;}
+  .toast-card{position:fixed; top:calc(env(safe-area-inset-top, 0px) + 10px); left:12px; right:12px; max-width:456px; margin:0 auto; z-index:300; background:var(--surface-2); border:1px solid var(--line); border-left:4px solid var(--lime); border-radius:14px; padding:11px 14px; box-shadow:0 8px 24px rgba(0,0,0,0.4); cursor:pointer; transform:translateY(-160%); transition:transform .28s ease;}
+  .toast-card.show{transform:translateY(0);}
+  .toast-card .tt{font-weight:700; font-size:13.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .toast-card .tb{font-size:12.5px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px;}
+  .rowdot{display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--coral); margin-left:6px; vertical-align:middle;}
 </style>
 </head>
 <body>
@@ -439,6 +444,7 @@
   </div>
 
   <!-- CHATS SCREEN (as a tab view rendered inside main, but chat DETAIL is an overlay screen) -->
+  <div class="toast-card" id="toastCard" onclick="onToastTap()"></div>
   <div class="screen" id="chatDetailScreen">
     <div class="screen-header">
       <button class="iconbtn" onclick="closeScreen('chatDetailScreen')">
@@ -604,6 +610,12 @@ let myPrivate = null;
 let cache = { posts: [], profilesById: {}, participantsByPost: {}, dmThreads: [], friendships: [] };
 let chatsSubTab = 'chats'; // 'chats' | 'friends'
 let friendshipsChannel = null;
+let unreadKeys = new Set();
+let lastReadMap = {};
+let inboxChannel = null;
+let toastTimer = null;
+let toastTarget = null;
+let knownPendingIds = null;
 
 /* ================= DATA (categories / i18n helpers, unchanged) ================= */
 const CATEGORIES = [
@@ -742,6 +754,7 @@ const TRANSLATIONS = {
     friend_list_empty_sub:'Búscalos arriba por su nickname para empezar.',
     friend_remove_title:'Eliminar amigo', friend_remove_msg:'Dejaréis de ser amigos. Podréis volver a añadiros más adelante.', friend_remove_btn:'Eliminar',
     friend_no_results:'No se ha encontrado a nadie con ese nickname.',
+    toast_friend_req:'{name} te ha enviado una solicitud de amistad', toast_friend_req_sub:'Toca para verla',
   },
   ca: {
     cat_futbol:'Futbol', cat_basquet:'Bàsquet', cat_voley:'Vòlei', cat_running:'Running', cat_padel:'Pàdel',
@@ -841,6 +854,7 @@ const TRANSLATIONS = {
     friend_list_empty_sub:'Cerca\'ls a dalt pel seu nickname per començar.',
     friend_remove_title:'Eliminar amic', friend_remove_msg:'Deixareu de ser amics. Podreu tornar-vos a afegir més endavant.', friend_remove_btn:'Eliminar',
     friend_no_results:'No s\'ha trobat ningú amb aquest nickname.',
+    toast_friend_req:'{name} t\'ha enviat una sol·licitud d\'amistat', toast_friend_req_sub:'Toca per veure-la',
   },
   en: {
     cat_futbol:'Football', cat_basquet:'Basketball', cat_voley:'Volleyball', cat_running:'Running', cat_padel:'Padel',
@@ -940,6 +954,7 @@ const TRANSLATIONS = {
     friend_list_empty_sub:'Search for them above by their nickname to get started.',
     friend_remove_title:'Remove friend', friend_remove_msg:'You\'ll no longer be friends. You can add each other again later.', friend_remove_btn:'Remove',
     friend_no_results:'No one found with that nickname.',
+    toast_friend_req:'{name} sent you a friend request', toast_friend_req_sub:'Tap to view it',
   }
 };
 function t(key, vars){
@@ -1202,6 +1217,8 @@ async function logout(){
   if(!ok) return;
   await sb.auth.signOut();
   unsubscribeFriendshipsRealtime();
+  unsubscribeInboxRealtime();
+  unreadKeys = new Set(); lastReadMap = {}; knownPendingIds = null; hideToast();
   session = null; myProfile = null; myPrivate = null;
   cache = { posts: [], profilesById: {}, participantsByPost: {}, dmThreads: [], friendships: [] };
   chatsSubTab = 'chats';
@@ -1242,6 +1259,7 @@ async function refreshData(){
   });
   cache.dmThreads = dms || [];
   cache.friendships = friendships || [];
+  knownPendingIds = new Set(pendingReceivedRequests().map(r=>r.id));
   updateChatsDot();
   renderFeed();
 }
@@ -1250,13 +1268,130 @@ async function refreshFriendships(){
   const {data} = await sb.from('friendships').select('*');
   cache.friendships = data || [];
   await ensureProfilesCached(cache.friendships.flatMap(f=>[f.requester_id, f.addressee_id]));
+  if(knownPendingIds){
+    pendingReceivedRequests().filter(r=>!knownPendingIds.has(r.id)).forEach(r=>{
+      const nm = (cache.profilesById[r.requester_id]||{}).name || '?';
+      showToast(t('toast_friend_req', {name: nm}), t('toast_friend_req_sub'), {kind:'friend'});
+    });
+  }
+  knownPendingIds = new Set(pendingReceivedRequests().map(r=>r.id));
   updateChatsDot();
   if(state.tab === 'chats') renderFeed();
 }
 function updateChatsDot(){
+  if(!myProfile) return;
+  const hasReq = pendingReceivedRequests().length > 0;
+  const hasUnread = unreadKeys.size > 0;
   const dot = document.getElementById('chatsDot');
-  if(!dot) return;
-  dot.style.display = pendingReceivedRequests().length > 0 ? 'block' : 'none';
+  if(dot) dot.style.display = (hasReq || hasUnread) ? 'block' : 'none';
+  const a = document.getElementById('subChatsDot');
+  if(a) a.style.display = hasUnread ? 'block' : 'none';
+  const b = document.getElementById('subFriendsDot');
+  if(b) b.style.display = hasReq ? 'block' : 'none';
+}
+/* ---- unread messages + floating toast ---- */
+function lastReadStorageKey(){ return 'enganchat_lastread_' + myProfile.id; }
+function saveLastRead(){ try{ localStorage.setItem(lastReadStorageKey(), JSON.stringify(lastReadMap)); }catch(e){} }
+function loadLastRead(){
+  try{ lastReadMap = JSON.parse(localStorage.getItem(lastReadStorageKey()) || '{}') || {}; }catch(e){ lastReadMap = {}; }
+  if(!lastReadMap.__init){ lastReadMap.__init = Date.now(); saveLastRead(); }
+}
+function chatKey(type, id){ return type + ':' + id; }
+function markChatRead(type, id, ts){
+  const key = chatKey(type, id);
+  const ms = ts ? Date.parse(ts) : Date.now();
+  if(!lastReadMap[key] || lastReadMap[key] < ms) lastReadMap[key] = ms;
+  unreadKeys.delete(key);
+  saveLastRead();
+  updateChatsDot();
+}
+async function computeUnread(){
+  if(!myProfile) return;
+  const [pmRes, dmRes] = await Promise.all([
+    sb.from('post_messages').select('post_id,sender_id,created_at,is_system').order('created_at', {ascending:false}).limit(300),
+    sb.from('dm_messages').select('thread_id,sender_id,created_at').order('created_at', {ascending:false}).limit(300)
+  ]);
+  const init = lastReadMap.__init || 0;
+  const found = new Set();
+  (pmRes.data || []).forEach(m=>{
+    if(m.is_system || m.sender_id === myProfile.id) return;
+    const key = chatKey('post', m.post_id);
+    if(Date.parse(m.created_at) > (lastReadMap[key] || init)) found.add(key);
+  });
+  (dmRes.data || []).forEach(m=>{
+    if(m.sender_id === myProfile.id) return;
+    const key = chatKey('dm', m.thread_id);
+    if(Date.parse(m.created_at) > (lastReadMap[key] || init)) found.add(key);
+  });
+  unreadKeys = found;
+  updateChatsDot();
+}
+function subscribeInboxRealtime(){
+  unsubscribeInboxRealtime();
+  if(!myProfile) return;
+  inboxChannel = sb
+    .channel('inbox-' + myProfile.id)
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'post_messages' }, p => onIncomingMessage('post', p.new))
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'dm_messages' }, p => onIncomingMessage('dm', p.new))
+    .subscribe();
+}
+function unsubscribeInboxRealtime(){
+  if(inboxChannel){ sb.removeChannel(inboxChannel); inboxChannel = null; }
+}
+function isChatScreenOpen(){
+  const el = document.getElementById('chatDetailScreen');
+  return !!(el && el.classList.contains('open'));
+}
+async function onIncomingMessage(type, m){
+  if(!m || !myProfile || m.is_system || m.sender_id === myProfile.id) return;
+  const id = type === 'post' ? m.post_id : m.thread_id;
+  if(isChatScreenOpen() && openChatType === type && openChatId === id){
+    markChatRead(type, id, m.created_at);
+    return;
+  }
+  if(type === 'dm' && !cache.dmThreads.some(d => d.id === id)){
+    const {data} = await sb.from('dm_threads').select('*').or(`user_a.eq.${myProfile.id},user_b.eq.${myProfile.id}`);
+    if(data) cache.dmThreads = data;
+  }
+  await ensureProfilesCached([m.sender_id]);
+  unreadKeys.add(chatKey(type, id));
+  updateChatsDot();
+  if(state.tab === 'chats' && chatsSubTab === 'chats' && !isChatScreenOpen()) renderChatsList();
+  const sender = (cache.profilesById[m.sender_id] || {}).name || '?';
+  let title = sender;
+  if(type === 'post'){
+    const post = cache.posts.find(p => p.id === id);
+    if(post) title = post.title;
+  }
+  const body = type === 'post' ? (sender + ': ' + m.text) : m.text;
+  showToast(title, body, {kind:'chat', type: type, id: id});
+}
+function showToast(title, body, target){
+  const el = document.getElementById('toastCard');
+  if(!el) return;
+  el.innerHTML = '<div class="tt">' + escapeHtml(title) + '</div><div class="tb">' + escapeHtml(body) + '</div>';
+  toastTarget = target;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(hideToast, 5000);
+}
+function hideToast(){
+  clearTimeout(toastTimer);
+  const el = document.getElementById('toastCard');
+  if(el) el.classList.remove('show');
+}
+function onToastTap(){
+  const tg = toastTarget;
+  hideToast();
+  if(!tg) return;
+  if(tg.kind === 'chat'){
+    chatsSubTab = 'chats';
+    setTab('chats');
+    openChat(tg.type, tg.id);
+  } else if(tg.kind === 'friend'){
+    chatsSubTab = 'friends';
+    setTab('chats');
+  }
 }
 function subscribeFriendshipsRealtime(){
   unsubscribeFriendshipsRealtime();
@@ -1329,6 +1464,9 @@ async function showApp(){
   renderChips();
   await refreshData();
   subscribeFriendshipsRealtime();
+  loadLastRead();
+  await computeUnread();
+  subscribeInboxRealtime();
   renderProfile();
   maybeShowInstall();
 }
@@ -1685,13 +1823,14 @@ function setChatsSubTab(sub){
 async function renderChatsList(){
   const main = document.getElementById('mainFeed');
   if(!myProfile){ main.innerHTML = ''; return; }
-  const friendsDot = pendingReceivedRequests().length ? '<span class="navdot" style="top:2px; right:6px;"></span>' : '';
+  const dotHtml = function(id){ return '<span class="navdot" id="' + id + '" style="top:2px; right:6px; display:none;"></span>'; };
   main.innerHTML = `
     <div class="segrow" style="margin-bottom:14px;">
-      <button class="segbtn ${chatsSubTab==='chats'?'active':''}" onclick="setChatsSubTab('chats')">${t('subtab_chats')}</button>
-      <button class="segbtn ${chatsSubTab==='friends'?'active':''}" onclick="setChatsSubTab('friends')" style="position:relative;">${t('subtab_friends')}${friendsDot}</button>
+      <button class="segbtn ${chatsSubTab==='chats'?'active':''}" onclick="setChatsSubTab('chats')" style="position:relative;">${t('subtab_chats')}${dotHtml('subChatsDot')}</button>
+      <button class="segbtn ${chatsSubTab==='friends'?'active':''}" onclick="setChatsSubTab('friends')" style="position:relative;">${t('subtab_friends')}${dotHtml('subFriendsDot')}</button>
     </div>
     <div id="chatsSubContent"></div>`;
+  updateChatsDot();
   if(chatsSubTab === 'friends'){ renderFriendsTab(); return; }
   await renderChatThreadsList();
 }
@@ -1739,7 +1878,7 @@ async function renderChatThreadsList(){
     <div class="chatlist-row" onclick="openChat('${it.type}','${it.id}')" style="cursor:pointer;">
       ${it.avatarHtml}
       <div class="chatlist-main">
-        <div class="chatlist-title">${escapeHtml(it.title)}</div>
+        <div class="chatlist-title">${escapeHtml(it.title)}${unreadKeys.has(chatKey(it.type, it.id)) ? '<span class="rowdot"></span>' : ''}</div>
         <div class="chatlist-preview">${escapeHtml(previewText)}</div>
       </div>
     </div>`;
@@ -1861,6 +2000,8 @@ async function loadChatMessages(){
   }
   await ensureProfilesCached(openChatMessages.map(m=>m.sender_id));
   renderChatMsgs();
+  const lastM = openChatMessages[openChatMessages.length-1];
+  markChatRead(openChatType, openChatId, lastM ? lastM.created_at : null);
 }
 function subscribeChatRealtime(){
   if(chatChannel){ sb.removeChannel(chatChannel); chatChannel = null; }
@@ -1970,7 +2111,10 @@ function openScreen(id){
 function closeScreen(id){
   document.getElementById(id).classList.remove('open');
   if(id === 'profileScreen') cancelEditProfile();
-  if(id === 'chatDetailScreen') unsubscribeChatRealtime();
+  if(id === 'chatDetailScreen'){
+    unsubscribeChatRealtime();
+    if(state.tab === 'chats' && chatsSubTab === 'chats') renderChatsList();
+  }
 }
 
 /* ================= PROFILE (view + inline edit) ================= */
