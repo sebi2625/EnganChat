@@ -284,11 +284,11 @@
   #installbar .txt{flex:1;}
 
   /* modal */
-  #modalOverlay, #userCardOverlay{
+  #modalOverlay, #userCardOverlay, #reportOverlay{
     position:fixed; inset:0; z-index:200; background:rgba(6,11,18,0.66);
     display:none; align-items:flex-end; justify-content:center;
   }
-  #modalOverlay.open, #userCardOverlay.open{display:flex;}
+  #modalOverlay.open, #userCardOverlay.open, #reportOverlay.open{display:flex;}
   .modalbox{
     width:100%; max-width:460px; background:var(--surface);
     border-top-left-radius:20px; border-top-right-radius:20px;
@@ -338,6 +338,11 @@
   .toast-card .tt{font-weight:700; font-size:13.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
   .toast-card .tb{font-size:12.5px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px;}
   .rowdot{display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--coral); margin-left:6px; vertical-align:middle;}
+  #reportOverlay .modalbox{max-height:92vh; overflow-y:auto;}
+  .reasonbtn{display:block; width:100%; text-align:left; padding:12px 14px; margin-bottom:8px; background:var(--surface-2); border:1px solid var(--line); border-radius:12px; color:var(--text); font:inherit; font-size:14px; cursor:pointer;}
+  .reasonbtn.active{border-color:var(--lime); color:var(--lime); font-weight:600;}
+  .reportwarn{background:color-mix(in srgb, var(--coral) 14%, transparent); border:1px solid var(--coral); color:var(--coral); border-radius:10px; padding:8px 10px; font-size:12.5px; font-weight:600; margin-bottom:14px;}
+  .secondary-btn:disabled{opacity:0.5;}
 </style>
 </head>
 <body>
@@ -591,9 +596,24 @@
         <div style="font-size:12px; color:var(--muted);" id="ucSub"></div>
       </div>
     </div>
+    <div class="reportwarn" id="ucWarn" style="display:none;"></div>
     <button class="primary-btn" onclick="contactFromCard()" data-i18n="contact_btn">Contactar</button>
-    <button class="secondary-btn" style="color:var(--coral); border-color:var(--coral);" onclick="reportFromCard()" data-i18n="report_btn">Reportar</button>
+    <button class="secondary-btn" id="ucReportBtn" style="color:var(--coral); border-color:var(--coral);" onclick="reportFromCard()" data-i18n="report_btn">Reportar</button>
     <button class="secondary-btn" onclick="closeUserCard()" data-i18n="close_btn">Cerrar</button>
+  </div>
+</div>
+
+<!-- REPORT USER -->
+<div id="reportOverlay">
+  <div class="modalbox">
+    <h3 id="reportTitle">Reportar</h3>
+    <div id="reportReasons" style="margin-top:12px;"></div>
+    <div class="field" style="margin-top:6px;">
+      <textarea id="reportDetails" maxlength="500" data-i18n-ph="report_details_ph" placeholder="Cuéntanos más (opcional)"></textarea>
+    </div>
+    <div class="hint" style="margin-bottom:12px;" data-i18n="report_note_anon">Es anónimo: la otra persona no verá quién lo ha enviado.</div>
+    <button class="primary-btn" id="reportSendBtn" onclick="submitReport()" disabled data-i18n="report_send">Enviar reporte</button>
+    <button class="secondary-btn" onclick="closeReport()" data-i18n="modal_cancel_default">Cancelar</button>
   </div>
 </div>
 
@@ -616,6 +636,10 @@ let inboxChannel = null;
 let toastTimer = null;
 let toastTarget = null;
 let knownPendingIds = null;
+let reportCounts = {};
+let myReportedIds = new Set();
+let reportTargetId = null;
+let reportReason = null;
 
 /* ================= DATA (categories / i18n helpers, unchanged) ================= */
 const CATEGORIES = [
@@ -755,6 +779,13 @@ const TRANSLATIONS = {
     friend_remove_title:'Eliminar amigo', friend_remove_msg:'Dejaréis de ser amigos. Podréis volver a añadiros más adelante.', friend_remove_btn:'Eliminar',
     friend_no_results:'No se ha encontrado a nadie con ese nickname.',
     toast_friend_req:'{name} te ha enviado una solicitud de amistad', toast_friend_req_sub:'Toca para verla',
+    report_title:'Reportar a {name}',
+    report_r_fake_student:'No es estudiante / correo falso', report_r_fake_profile:'Perfil falso o suplantación', report_r_harassment:'Acoso o comportamiento agresivo', report_r_inappropriate:'Contenido inapropiado', report_r_spam:'Spam o publicidad', report_r_other:'Otro motivo',
+    report_details_ph:'Cuéntanos más (opcional)', report_send:'Enviar reporte',
+    report_note_anon:'Es anónimo: la otra persona no verá quién lo ha enviado.',
+    report_thanks:'Reporte enviado', report_thanks_sub:'Gracias, lo revisaremos.',
+    report_already:'Reportado ✓', report_error:'No se ha podido enviar el reporte',
+    report_warning:'⚠ Acumula {n} reportes de otros usuarios',
   },
   ca: {
     cat_futbol:'Futbol', cat_basquet:'Bàsquet', cat_voley:'Vòlei', cat_running:'Running', cat_padel:'Pàdel',
@@ -855,6 +886,13 @@ const TRANSLATIONS = {
     friend_remove_title:'Eliminar amic', friend_remove_msg:'Deixareu de ser amics. Podreu tornar-vos a afegir més endavant.', friend_remove_btn:'Eliminar',
     friend_no_results:'No s\'ha trobat ningú amb aquest nickname.',
     toast_friend_req:'{name} t\'ha enviat una sol·licitud d\'amistat', toast_friend_req_sub:'Toca per veure-la',
+    report_title:'Reportar {name}',
+    report_r_fake_student:'No és estudiant / correu fals', report_r_fake_profile:'Perfil fals o suplantació', report_r_harassment:'Assetjament o comportament agressiu', report_r_inappropriate:'Contingut inapropiat', report_r_spam:'Spam o publicitat', report_r_other:'Un altre motiu',
+    report_details_ph:'Explica\'ns més (opcional)', report_send:'Enviar report',
+    report_note_anon:'És anònim: l\'altra persona no veurà qui l\'ha enviat.',
+    report_thanks:'Report enviat', report_thanks_sub:'Gràcies, el revisarem.',
+    report_already:'Reportat ✓', report_error:'No s\'ha pogut enviar el report',
+    report_warning:'⚠ Acumula {n} reports d\'altres usuaris',
   },
   en: {
     cat_futbol:'Football', cat_basquet:'Basketball', cat_voley:'Volleyball', cat_running:'Running', cat_padel:'Padel',
@@ -955,6 +993,13 @@ const TRANSLATIONS = {
     friend_remove_title:'Remove friend', friend_remove_msg:'You\'ll no longer be friends. You can add each other again later.', friend_remove_btn:'Remove',
     friend_no_results:'No one found with that nickname.',
     toast_friend_req:'{name} sent you a friend request', toast_friend_req_sub:'Tap to view it',
+    report_title:'Report {name}',
+    report_r_fake_student:'Not a student / fake email', report_r_fake_profile:'Fake profile or impersonation', report_r_harassment:'Harassment or aggressive behaviour', report_r_inappropriate:'Inappropriate content', report_r_spam:'Spam or advertising', report_r_other:'Other reason',
+    report_details_ph:'Tell us more (optional)', report_send:'Send report',
+    report_note_anon:'It\'s anonymous: the other person won\'t see who sent it.',
+    report_thanks:'Report sent', report_thanks_sub:'Thanks, we\'ll review it.',
+    report_already:'Reported ✓', report_error:'Couldn\'t send the report',
+    report_warning:'⚠ Has {n} reports from other users',
   }
 };
 function t(key, vars){
@@ -1218,7 +1263,7 @@ async function logout(){
   await sb.auth.signOut();
   unsubscribeFriendshipsRealtime();
   unsubscribeInboxRealtime();
-  unreadKeys = new Set(); lastReadMap = {}; knownPendingIds = null; hideToast();
+  unreadKeys = new Set(); lastReadMap = {}; knownPendingIds = null; hideToast(); reportCounts = {}; myReportedIds = new Set();
   session = null; myProfile = null; myPrivate = null;
   cache = { posts: [], profilesById: {}, participantsByPost: {}, dmThreads: [], friendships: [] };
   chatsSubTab = 'chats';
@@ -1467,6 +1512,7 @@ async function showApp(){
   loadLastRead();
   await computeUnread();
   subscribeInboxRealtime();
+  loadReportData();
   renderProfile();
   maybeShowInstall();
 }
@@ -2052,7 +2098,7 @@ async function sendChatMsg(){
 }
 let ucTargetId = null;
 async function openUserCard(uid){
-  await ensureProfilesCached([uid]);
+  await Promise.all([ensureProfilesCached([uid]), loadReportData()]);
   const u = cache.profilesById[uid];
   if(!u) return;
   ucTargetId = uid;
@@ -2061,6 +2107,14 @@ async function openUserCard(uid){
   document.getElementById('ucSub').textContent = u.uni ? (originLbl + ' · ' + u.uni) : originLbl;
   const avatarWrap = document.getElementById('ucAvatar');
   avatarWrap.innerHTML = u.photo_url ? `<img src="${u.photo_url}">` : `<span>${escapeHtml((u.name||'?').charAt(0).toUpperCase())}</span>`;
+  const warn = document.getElementById('ucWarn');
+  const nRep = reportCounts[uid] || 0;
+  if(nRep > 0){ warn.textContent = t('report_warning', {n: nRep}); warn.style.display = 'block'; }
+  else { warn.style.display = 'none'; }
+  const rb = document.getElementById('ucReportBtn');
+  const already = myReportedIds.has(uid);
+  rb.textContent = already ? t('report_already') : t('report_btn');
+  rb.disabled = already;
   document.getElementById('userCardOverlay').classList.add('open');
 }
 function closeUserCard(){
@@ -2073,16 +2127,58 @@ async function contactFromCard(){
   closeUserCard();
   await openDmWith(uid);
 }
-async function reportFromCard(){
-  if(!ucTargetId) return;
-  const uid = ucTargetId;
-  const u = cache.profilesById[uid];
-  const name = u ? u.name : '—';
-  try{ await sb.from('reports').insert({reporter_id: myProfile.id, reported_id: uid, reason: ''}); }catch(e){}
-  const subject = encodeURIComponent(t('report_subject', {name}));
-  const body = encodeURIComponent(t('report_body', {name, nick: u ? u.nickname : uid}));
-  window.open(`mailto:${FEEDBACK_EMAIL}?subject=${subject}&body=${body}`, '_blank');
+async function loadReportData(){
+  if(!myProfile) return;
+  const [c, m] = await Promise.all([
+    sb.rpc('report_counts'),
+    sb.from('reports').select('reported_id').eq('reporter_id', myProfile.id)
+  ]);
+  reportCounts = {};
+  (c.data || []).forEach(r => { reportCounts[r.reported_id] = Number(r.n); });
+  myReportedIds = new Set((m.data || []).map(r => r.reported_id));
+}
+const REPORT_REASONS = ['fake_student', 'fake_profile', 'harassment', 'inappropriate', 'spam', 'other'];
+function reportFromCard(){
+  if(!ucTargetId || myReportedIds.has(ucTargetId)) return;
+  reportTargetId = ucTargetId;
+  reportReason = null;
+  const u = cache.profilesById[reportTargetId] || {};
+  document.getElementById('reportTitle').textContent = t('report_title', {name: u.name || '?'});
+  document.getElementById('reportDetails').value = '';
+  document.getElementById('reportSendBtn').disabled = true;
+  renderReportReasons();
   closeUserCard();
+  document.getElementById('reportOverlay').classList.add('open');
+}
+function renderReportReasons(){
+  document.getElementById('reportReasons').innerHTML = REPORT_REASONS.map(function(r){
+    return '<button type="button" class="reasonbtn' + (reportReason === r ? ' active' : '') + '" onclick="pickReportReason(\'' + r + '\')">' + t('report_r_' + r) + '</button>';
+  }).join('');
+}
+function pickReportReason(r){
+  reportReason = r;
+  renderReportReasons();
+  document.getElementById('reportSendBtn').disabled = false;
+}
+function closeReport(){
+  document.getElementById('reportOverlay').classList.remove('open');
+  reportTargetId = null;
+  reportReason = null;
+}
+async function submitReport(){
+  if(!reportTargetId || !reportReason || !myProfile) return;
+  const btn = document.getElementById('reportSendBtn');
+  btn.disabled = true;
+  const details = document.getElementById('reportDetails').value.trim().slice(0, 500);
+  const {error} = await sb.from('reports').insert({reporter_id: myProfile.id, reported_id: reportTargetId, reason: reportReason, details: details || null});
+  if(error && error.code !== '23505'){
+    btn.disabled = false;
+    showToast(t('report_error'), '', null);
+    return;
+  }
+  myReportedIds.add(reportTargetId);
+  closeReport();
+  showToast(t('report_thanks'), t('report_thanks_sub'), null);
 }
 async function openDmWith(targetId){
   if(!myProfile || targetId === myProfile.id) return;
