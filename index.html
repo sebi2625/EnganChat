@@ -2207,10 +2207,12 @@ async function openUserCard(uid){
     ? u.sports.map(function(s){ return '<span class="microchip">' + catLabel(catById(s)) + '</span>'; }).join('')
     : '<span class="microchip">' + t('profile_none') + '</span>';
   const createdN = cache.posts.filter(function(pp){ return pp.creator_id === uid; }).length;
+  const joinedN = cache.posts.filter(function(pp){ const st = cache.participantsByPost[pp.id]; return pp.creator_id !== uid && st && st.has(uid); }).length;
   document.getElementById('ucInfo').innerHTML =
     '<div class="inforow"><span class="k">' + t('reg_lang_label') + '</span><span class="v">' + escapeHtml(u.lang || '—') + '</span></div>' +
     '<div class="inforow"><span class="k">' + t('profile_sports') + '</span><span class="v"><div class="chipwrap">' + sportsHtml + '</div></span></div>' +
-    '<div class="inforow"><span class="k">' + t('profile_created') + '</span><span class="v">' + createdN + '</span></div>';
+    '<div class="inforow"><span class="k">' + t('profile_created') + '</span><span class="v">' + createdN + '</span></div>' +
+    '<div class="inforow"><span class="k">' + t('profile_joined') + '</span><span class="v">' + joinedN + '</span></div>';
   const warn = document.getElementById('ucWarn');
   const nRep = reportCounts[uid] || 0;
   if(nRep > 0){ warn.textContent = t('report_warning', {n: nRep}); warn.style.display = 'block'; }
