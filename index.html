@@ -284,11 +284,11 @@
   #installbar .txt{flex:1;}
 
   /* modal */
-  #modalOverlay, #userCardOverlay, #reportOverlay, #feedbackOverlay{
+  #modalOverlay, #userCardOverlay, #reportOverlay, #feedbackOverlay, #participantsOverlay{
     position:fixed; inset:0; z-index:200; background:rgba(6,11,18,0.66);
     display:none; align-items:flex-end; justify-content:center;
   }
-  #modalOverlay.open, #userCardOverlay.open, #reportOverlay.open, #feedbackOverlay.open{display:flex;}
+  #modalOverlay.open, #userCardOverlay.open, #reportOverlay.open, #feedbackOverlay.open, #participantsOverlay.open{display:flex;}
   .modalbox{
     width:100%; max-width:460px; background:var(--surface);
     border-top-left-radius:20px; border-top-right-radius:20px;
@@ -343,6 +343,7 @@
   .reasonbtn.active{border-color:var(--lime); color:var(--lime); font-weight:600;}
   .reportwarn{background:color-mix(in srgb, var(--coral) 14%, transparent); border:1px solid var(--coral); color:var(--coral); border-radius:10px; padding:8px 10px; font-size:12.5px; font-weight:600; margin-bottom:14px;}
   .secondary-btn:disabled{opacity:0.5;}
+  .linkbtn{background:none; border:none; color:var(--lime); font:inherit; font-size:12.5px; font-weight:600; cursor:pointer; padding:0;}
 </style>
 </head>
 <body>
@@ -586,6 +587,16 @@
   </div>
 </div>
 
+<!-- PARTICIPANTS LIST -->
+<div id="participantsOverlay">
+  <div class="modalbox">
+    <h3 id="partTitle">—</h3>
+    <div class="hint" style="margin-bottom:8px;" data-i18n="part_hint">Toca a alguien para ver su perfil, escribirle o reportarlo.</div>
+    <div id="partList" style="max-height:52vh; overflow-y:auto; margin-bottom:12px;"></div>
+    <button class="secondary-btn" onclick="closeParticipants()" data-i18n="close_btn">Cerrar</button>
+  </div>
+</div>
+
 <!-- USER CARD (from event history) -->
 <div id="userCardOverlay">
   <div class="modalbox">
@@ -816,6 +827,8 @@ const TRANSLATIONS = {
     report_warning:'⚠ Acumula {n} reportes de otros usuarios',
     feedback_ph:'Cuéntanos qué mejorarías o qué falla...', feedback_send_btn:'Enviar',
     feedback_thanks:'¡Gracias!', feedback_thanks_sub:'Hemos recibido tu mensaje.', feedback_error:'No se ha podido enviar',
+    post_see_people:'Ver apuntados ({n})', part_organizer:'Organiza', part_you:'tú',
+    part_hint:'Toca a alguien para ver su perfil, escribirle o reportarlo.',
   },
   ca: {
     cat_futbol:'Futbol', cat_basquet:'Bàsquet', cat_voley:'Vòlei', cat_running:'Running', cat_padel:'Pàdel',
@@ -925,6 +938,8 @@ const TRANSLATIONS = {
     report_warning:'⚠ Acumula {n} reports d\'altres usuaris',
     feedback_ph:'Explica\'ns què milloraries o què falla...', feedback_send_btn:'Enviar',
     feedback_thanks:'Gràcies!', feedback_thanks_sub:'Hem rebut el teu missatge.', feedback_error:'No s\'ha pogut enviar',
+    post_see_people:'Veure apuntats ({n})', part_organizer:'Organitza', part_you:'tu',
+    part_hint:'Toca algú per veure el seu perfil, escriure-li o reportar-lo.',
   },
   en: {
     cat_futbol:'Football', cat_basquet:'Basketball', cat_voley:'Volleyball', cat_running:'Running', cat_padel:'Padel',
@@ -1034,6 +1049,8 @@ const TRANSLATIONS = {
     report_warning:'⚠ Has {n} reports from other users',
     feedback_ph:'Tell us what you\'d improve or what\'s broken...', feedback_send_btn:'Send',
     feedback_thanks:'Thank you!', feedback_thanks_sub:'We\'ve received your message.', feedback_error:'Couldn\'t send it',
+    post_see_people:'See who joined ({n})', part_organizer:'Organiser', part_you:'you',
+    part_hint:'Tap someone to view their profile, message or report them.',
   }
 };
 function t(key, vars){
@@ -1620,6 +1637,40 @@ function getHistoryPosts(){
     return d < today && d >= weekAgo;
   }).sort((a,b)=> new Date(b.event_date+'T00:00:00') - new Date(a.event_date+'T00:00:00'));
 }
+function participantIdsOf(post){
+  const ids = [];
+  if(post.creator_id) ids.push(post.creator_id);
+  const set = cache.participantsByPost[post.id];
+  if(set) set.forEach(id=>{ if(!ids.includes(id)) ids.push(id); });
+  return ids;
+}
+function partRowHtml(uid, badge, isMe){
+  const u = cache.profilesById[uid] || {};
+  const name = u.name || '?';
+  const avatarInner = u.photo_url ? ('<img src="' + escapeAttr(u.photo_url) + '" style="width:100%;height:100%;object-fit:cover;">') : escapeHtml(name.charAt(0).toUpperCase());
+  const click = isMe ? '' : (' onclick="openUserCard(\'' + uid + '\')" style="cursor:pointer;"');
+  const warn = (!isMe && reportCounts[uid]) ? '<span style="color:var(--coral); margin-left:6px;">&#9888;</span>' : '';
+  const you = isMe ? (' <span class="hint">(' + t('part_you') + ')</span>') : '';
+  return '<div class="chatlist-row"' + click + '>' +
+    '<div class="chatlist-avatar" style="background:var(--surface-2); color:var(--lime); overflow:hidden;">' + avatarInner + '</div>' +
+    '<div class="chatlist-main"><div class="chatlist-title">' + escapeHtml(name) + you + warn + '</div></div>' +
+    '<div style="flex:0 0 auto;">' + badge + '</div></div>';
+}
+async function openParticipants(postId){
+  const post = cache.posts.find(p => p.id === postId);
+  if(!post) return;
+  const ids = participantIdsOf(post);
+  await Promise.all([ensureProfilesCached(ids), loadReportData()]);
+  document.getElementById('partTitle').textContent = post.title;
+  document.getElementById('partList').innerHTML = ids.map(function(uid){
+    const badge = uid === post.creator_id ? ('<span class="microchip" style="color:var(--lime);">' + t('part_organizer') + '</span>') : '';
+    return partRowHtml(uid, badge, !!(myProfile && uid === myProfile.id));
+  }).join('');
+  document.getElementById('participantsOverlay').classList.add('open');
+}
+function closeParticipants(){
+  document.getElementById('participantsOverlay').classList.remove('open');
+}
 function getParticipants(post){
   const ids = new Set();
   if(post.creator_id) ids.add(post.creator_id);
@@ -1698,6 +1749,7 @@ function renderFeed(){
           <span>&#128205; ${escapeHtml(p.location || 'Por confirmar')}</span>
           <span>&#128197; ${dateFmt}</span>
           ${p.map_link ? `<a href="${escapeAttr(p.map_link)}" target="_blank" rel="noopener">${t('post_directions')}</a>` : ''}
+          <button type="button" class="linkbtn" onclick="openParticipants('${p.id}')">&#128101; ${t('post_see_people', {n: participantIdsOf(p).length})}</button>
         </div>
         <div class="post-footer">
           <div class="creator" ${(!isOwner && creatorProfile) ? `style="cursor:pointer;" onclick="openUserCard('${p.creator_id}')"` : ''}>
@@ -2159,6 +2211,7 @@ async function contactFromCard(){
   if(!ucTargetId) return;
   const uid = ucTargetId;
   closeUserCard();
+  closeParticipants();
   await openDmWith(uid);
 }
 async function loadReportData(){
