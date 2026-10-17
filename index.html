@@ -235,6 +235,8 @@
     display:inline-flex; align-items:center; gap:5px; font-size:11.5px; font-weight:700;
     color:var(--lime); background:rgba(198,241,53,0.12); padding:4px 10px; border-radius:100px; margin-top:6px;
   }
+  .vmark{color:var(--lime); font-weight:800; margin-left:4px;}
+  .vmsg{font-size:12.5px; margin:8px 0 0; min-height:16px; color:var(--coral);}
   .badge-unverified{
     display:inline-flex; align-items:center; gap:5px; font-size:11.5px; font-weight:600;
     color:var(--muted); background:var(--surface-2); padding:4px 10px; border-radius:100px; margin-top:6px;
@@ -284,11 +286,11 @@
   #installbar .txt{flex:1;}
 
   /* modal */
-  #modalOverlay, #userCardOverlay, #reportOverlay, #feedbackOverlay, #participantsOverlay{
+  #modalOverlay, #userCardOverlay, #reportOverlay, #feedbackOverlay, #participantsOverlay, #verifyOverlay{
     position:fixed; inset:0; z-index:200; background:rgba(6,11,18,0.66);
     display:none; align-items:flex-end; justify-content:center;
   }
-  #modalOverlay.open, #userCardOverlay.open, #reportOverlay.open, #feedbackOverlay.open, #participantsOverlay.open{display:flex;}
+  #modalOverlay.open, #userCardOverlay.open, #reportOverlay.open, #feedbackOverlay.open, #participantsOverlay.open, #verifyOverlay.open{display:flex;}
   .modalbox{
     width:100%; max-width:460px; background:var(--surface);
     border-top-left-radius:20px; border-top-right-radius:20px;
@@ -608,6 +610,7 @@
         <div style="font-size:12px; color:var(--muted);" id="ucSub"></div>
       </div>
     </div>
+    <div id="ucBadge"></div>
     <div class="reportwarn" id="ucWarn" style="display:none;"></div>
     <div class="infogrid" id="ucInfo" style="margin-bottom:14px;"></div>
     <button class="primary-btn" onclick="contactFromCard()" data-i18n="contact_btn">Contactar</button>
@@ -625,6 +628,24 @@
     </div>
     <button class="primary-btn" id="feedbackSendBtn" onclick="submitFeedback()" disabled data-i18n="feedback_send_btn">Enviar</button>
     <button class="secondary-btn" onclick="closeFeedback()" data-i18n="modal_cancel_default">Cancelar</button>
+  </div>
+</div>
+
+<!-- VERIFY EMAIL -->
+<div id="verifyOverlay">
+  <div class="modalbox">
+    <h3 data-i18n="ver_title">Verifica tu correo universitario</h3>
+    <div class="hint" style="margin-bottom:10px;" data-i18n="ver_hint">Te enviaremos un código de 6 dígitos. Es opcional: si lo verificas, tu perfil mostrará una insignia de estudiante.</div>
+    <div id="verStep1">
+      <div class="field"><input type="email" id="verEmail" data-i18n-ph="reg_email_ph" placeholder="nombre@upc.edu" autocapitalize="off"></div>
+      <button class="primary-btn" id="verSendBtn" onclick="sendVerifyCode()" data-i18n="ver_send">Enviar código</button>
+    </div>
+    <div id="verStep2" style="display:none;">
+      <div class="field"><input type="text" id="verCode" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="123456"></div>
+      <button class="primary-btn" id="verCheckBtn" onclick="checkVerifyCode()" data-i18n="ver_check">Verificar</button>
+    </div>
+    <div class="vmsg" id="verMsg"></div>
+    <button class="secondary-btn" onclick="closeVerify()" data-i18n="modal_cancel_default">Cancelar</button>
   </div>
 </div>
 
@@ -691,6 +712,65 @@ const CATEGORIES = [
 const catLabel = c => t(c.tkey);
 const catById = id => CATEGORIES.find(c=>c.id===id) || CATEGORIES[0];
 const MAX_CATS = 3;
+function vmark(p){ return (p && p.verified_at) ? ' <span class="vmark" title="' + escapeAttr(t('ver_badge')) + '">&#10003;</span>' : ''; }
+function openVerify(){
+  document.getElementById('verEmail').value = (myPrivate && myPrivate.university_email) || '';
+  document.getElementById('verCode').value = '';
+  document.getElementById('verStep1').style.display = 'block';
+  document.getElementById('verStep2').style.display = 'none';
+  document.getElementById('verMsg').textContent = '';
+  document.getElementById('verMsg').style.color = 'var(--coral)';
+  document.getElementById('verifyOverlay').classList.add('open');
+}
+function closeVerify(){
+  document.getElementById('verifyOverlay').classList.remove('open');
+}
+function verMsg(key, ok){
+  const el = document.getElementById('verMsg');
+  el.style.color = ok ? 'var(--lime)' : 'var(--coral)';
+  el.textContent = t(key);
+}
+async function callVerify(payload){
+  const {data, error} = await sb.functions.invoke('verify-email', {body: payload});
+  if(error && !data){
+    try{ const j = await error.context.json(); return j; }catch(e){ return {error:'server_error'}; }
+  }
+  return data || {error:'server_error'};
+}
+async function sendVerifyCode(){
+  const email = document.getElementById('verEmail').value.trim();
+  if(!email) return;
+  const btn = document.getElementById('verSendBtn');
+  btn.disabled = true;
+  document.getElementById('verMsg').textContent = '';
+  const res = await callVerify({action:'send', email});
+  btn.disabled = false;
+  if(res.ok){
+    document.getElementById('verStep1').style.display = 'none';
+    document.getElementById('verStep2').style.display = 'block';
+    verMsg('ver_sent', true);
+    document.getElementById('verCode').focus();
+  } else {
+    verMsg('ver_err_' + (res.error || 'server_error'), false);
+  }
+}
+async function checkVerifyCode(){
+  const code = document.getElementById('verCode').value.trim();
+  if(!code) return;
+  const btn = document.getElementById('verCheckBtn');
+  btn.disabled = true;
+  const res = await callVerify({action:'check', code});
+  btn.disabled = false;
+  if(res.ok){
+    closeVerify();
+    await loadMyProfile();
+    await refreshData();
+    if(document.getElementById('profileScreen').classList.contains('open')) renderProfile();
+    showToast(t('ver_ok'), '', null);
+  } else {
+    verMsg('ver_err_' + (res.error || 'server_error'), false);
+  }
+}
 function openFeedback(){
   document.getElementById('feedbackText').value = '';
   document.getElementById('feedbackSendBtn').disabled = true;
@@ -823,6 +903,7 @@ const TRANSLATIONS = {
     friend_remove_title:'Eliminar amigo', friend_remove_msg:'Dejaréis de ser amigos. Podréis volver a añadiros más adelante.', friend_remove_btn:'Eliminar',
     friend_no_results:'No se ha encontrado a nadie con ese nickname.',
     toast_friend_req:'{name} te ha enviado una solicitud de amistad', toast_friend_req_sub:'Toca para verla',
+    ver_btn:'Verificar correo universitario', ver_title:'Verifica tu correo universitario', ver_hint:'Te enviaremos un código de 6 dígitos. Es opcional: si lo verificas, tu perfil mostrará una insignia de estudiante.', ver_send:'Enviar código', ver_check:'Verificar', ver_sent:'Código enviado. Revisa tu correo (y la carpeta de spam).', ver_ok:'Perfil verificado ✓', ver_badge:'Estudiante verificado', ver_err_not_configured:'La verificación aún no está disponible. Inténtalo más adelante.', ver_err_bad_email:'Ese correo no es válido.', ver_err_domain_not_allowed:'Ese correo no parece de una universidad compatible.', ver_err_email_in_use:'Ese correo ya está verificado en otra cuenta.', ver_err_too_many_sends:'Has pedido demasiados códigos hoy. Inténtalo mañana.', ver_err_too_many_tries:'Demasiados intentos. Vuelve a probar más tarde.', ver_err_wrong_code:'Código incorrecto.', ver_err_no_pending:'El código ha caducado. Pide uno nuevo.', ver_err_bad_code:'Escribe los 6 dígitos del código.', ver_err_send_failed:'No se ha podido enviar el correo. Inténtalo de nuevo.', ver_err_server_error:'Algo ha fallado. Inténtalo de nuevo.', ver_err_not_authenticated:'Vuelve a iniciar sesión.',
     report_title:'Reportar a {name}',
     report_r_fake_student:'No es estudiante / correo falso', report_r_fake_profile:'Perfil falso o suplantación', report_r_harassment:'Acoso o comportamiento agresivo', report_r_inappropriate:'Contenido inapropiado', report_r_spam:'Spam o publicidad', report_r_other:'Otro motivo',
     report_details_ph:'Cuéntanos más (opcional)', report_send:'Enviar reporte',
@@ -934,6 +1015,7 @@ const TRANSLATIONS = {
     friend_remove_title:'Eliminar amic', friend_remove_msg:'Deixareu de ser amics. Podreu tornar-vos a afegir més endavant.', friend_remove_btn:'Eliminar',
     friend_no_results:'No s\'ha trobat ningú amb aquest nickname.',
     toast_friend_req:'{name} t\'ha enviat una sol·licitud d\'amistat', toast_friend_req_sub:'Toca per veure-la',
+    ver_btn:'Verifica el correu universitari', ver_title:'Verifica el teu correu universitari', ver_hint:'T\'enviarem un codi de 6 dígits. És opcional: si el verifiques, el teu perfil mostrarà una insígnia d\'estudiant.', ver_send:'Envia el codi', ver_check:'Verifica', ver_sent:'Codi enviat. Revisa el correu (i la carpeta de spam).', ver_ok:'Perfil verificat ✓', ver_badge:'Estudiant verificat', ver_err_not_configured:'La verificació encara no està disponible. Torna-ho a provar més endavant.', ver_err_bad_email:'Aquest correu no és vàlid.', ver_err_domain_not_allowed:'Aquest correu no sembla d\'una universitat compatible.', ver_err_email_in_use:'Aquest correu ja està verificat en un altre compte.', ver_err_too_many_sends:'Has demanat massa codis avui. Torna-ho a provar demà.', ver_err_too_many_tries:'Massa intents. Torna-ho a provar més tard.', ver_err_wrong_code:'Codi incorrecte.', ver_err_no_pending:'El codi ha caducat. Demana\'n un de nou.', ver_err_bad_code:'Escriu els 6 dígits del codi.', ver_err_send_failed:'No s\'ha pogut enviar el correu. Torna-ho a provar.', ver_err_server_error:'Alguna cosa ha fallat. Torna-ho a provar.', ver_err_not_authenticated:'Torna a iniciar sessió.',
     report_title:'Reportar {name}',
     report_r_fake_student:'No és estudiant / correu fals', report_r_fake_profile:'Perfil fals o suplantació', report_r_harassment:'Assetjament o comportament agressiu', report_r_inappropriate:'Contingut inapropiat', report_r_spam:'Spam o publicitat', report_r_other:'Un altre motiu',
     report_details_ph:'Explica\'ns més (opcional)', report_send:'Enviar report',
@@ -1045,6 +1127,7 @@ const TRANSLATIONS = {
     friend_remove_title:'Remove friend', friend_remove_msg:'You\'ll no longer be friends. You can add each other again later.', friend_remove_btn:'Remove',
     friend_no_results:'No one found with that nickname.',
     toast_friend_req:'{name} sent you a friend request', toast_friend_req_sub:'Tap to view it',
+    ver_btn:'Verify university email', ver_title:'Verify your university email', ver_hint:'We\'ll send you a 6-digit code. It\'s optional: if you verify, your profile will show a student badge.', ver_send:'Send code', ver_check:'Verify', ver_sent:'Code sent. Check your inbox (and spam folder).', ver_ok:'Profile verified ✓', ver_badge:'Verified student', ver_err_not_configured:'Verification isn\'t available yet. Please try again later.', ver_err_bad_email:'That email isn\'t valid.', ver_err_domain_not_allowed:'That doesn\'t look like a supported university email.', ver_err_email_in_use:'That email is already verified on another account.', ver_err_too_many_sends:'You\'ve requested too many codes today. Try again tomorrow.', ver_err_too_many_tries:'Too many attempts. Try again later.', ver_err_wrong_code:'Wrong code.', ver_err_no_pending:'The code has expired. Request a new one.', ver_err_bad_code:'Enter the 6 digits of the code.', ver_err_send_failed:'Couldn\'t send the email. Please try again.', ver_err_server_error:'Something went wrong. Please try again.', ver_err_not_authenticated:'Please log in again.',
     report_title:'Report {name}',
     report_r_fake_student:'Not a student / fake email', report_r_fake_profile:'Fake profile or impersonation', report_r_harassment:'Harassment or aggressive behaviour', report_r_inappropriate:'Inappropriate content', report_r_spam:'Spam or advertising', report_r_other:'Other reason',
     report_details_ph:'Tell us more (optional)', report_send:'Send report',
@@ -1681,7 +1764,7 @@ function partRowHtml(uid, badge, isMe){
   const you = isMe ? (' <span class="hint">(' + t('part_you') + ')</span>') : '';
   return '<div class="chatlist-row"' + click + '>' +
     '<div class="chatlist-avatar" style="background:var(--surface-2); color:var(--lime); overflow:hidden;">' + avatarInner + '</div>' +
-    '<div class="chatlist-main"><div class="chatlist-title">' + escapeHtml(name) + you + warn + '</div></div>' +
+    '<div class="chatlist-main"><div class="chatlist-title">' + escapeHtml(name) + vmark(u) + you + warn + '</div></div>' +
     '<div style="flex:0 0 auto;">' + badge + '</div></div>';
 }
 async function refreshParticipantsOverlay(){
@@ -1788,7 +1871,7 @@ function renderFeed(){
         <div class="post-footer">
           <div class="creator" ${(!isOwner && creatorProfile) ? `style="cursor:pointer;" onclick="openUserCard('${p.creator_id}')"` : ''}>
             <span class="flagdot ${creatorProfile && creatorProfile.origin==='intl'?'intl':''}"></span>
-            ${escapeHtml(creatorProfile ? dn(creatorProfile) : '—')}
+            ${escapeHtml(creatorProfile ? dn(creatorProfile) : '—')}${vmark(creatorProfile)}
           </div>
           <div style="display:flex; align-items:center; gap:10px;">
             ${p.mode==='looking'
@@ -2248,6 +2331,7 @@ async function openUserCard(uid){
     '<div class="inforow"><span class="k">' + t('profile_sports') + '</span><span class="v"><div class="chipwrap">' + sportsHtml + '</div></span></div>' +
     '<div class="inforow"><span class="k">' + t('profile_created') + '</span><span class="v">' + createdN + '</span></div>' +
     '<div class="inforow"><span class="k">' + t('profile_joined') + '</span><span class="v">' + joinedN + '</span></div>';
+  document.getElementById('ucBadge').innerHTML = u.verified_at ? ('<span class="badge-verified">&#10003; ' + t('ver_badge') + '</span>') : '';
   const warn = document.getElementById('ucWarn');
   const nRep = reportCounts[uid] || 0;
   if(nRep > 0){ warn.textContent = t('report_warning', {n: nRep}); warn.style.display = 'block'; }
@@ -2406,7 +2490,7 @@ function renderProfile(){
   editBtn.style.visibility = 'visible';
   const myPosts = cache.posts.filter(post => post.creator_id === p.id);
   const joinedCount = cache.posts.filter(post => isJoined(post)).length;
-  const verified = !!(myPrivate && myPrivate.verified);
+  const verified = !!(myProfile && myProfile.verified_at);
   body.innerHTML = `
     <div class="profile-hero">
       <div class="profile-avatar">
@@ -2414,7 +2498,7 @@ function renderProfile(){
       </div>
       <div class="profile-name">${escapeHtml(p.name)}</div>
       <div class="profile-sub">${p.origin==='local' ? t('origin_local') : t('origin_intl')} &middot; ${escapeHtml(p.uni || '—')}</div>
-      ${verified ? `<span class="badge-verified">${t('badge_verified')}</span>` : `<span class="badge-unverified">${t('badge_unverified')}</span>`}
+      ${verified ? `<span class="badge-verified">${t('badge_verified')}</span>` : `<span class="badge-unverified">${t('badge_unverified')}</span><button class="secondary-btn" style="margin-top:10px;" onclick="openVerify()">${t('ver_btn')}</button>`}
     </div>
     <div class="infogrid">
       <div class="inforow"><span class="k">${t('profile_idiom')}</span><span class="v">${escapeHtml(p.lang || '—')}</span></div>
