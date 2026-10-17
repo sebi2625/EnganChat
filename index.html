@@ -286,11 +286,11 @@
   #installbar .txt{flex:1;}
 
   /* modal */
-  #modalOverlay, #userCardOverlay, #reportOverlay, #feedbackOverlay, #participantsOverlay, #verifyOverlay{
+  #modalOverlay, #userCardOverlay, #reportOverlay, #feedbackOverlay, #appealOverlay, #participantsOverlay, #verifyOverlay{
     position:fixed; inset:0; z-index:200; background:rgba(6,11,18,0.66);
     display:none; align-items:flex-end; justify-content:center;
   }
-  #modalOverlay.open, #userCardOverlay.open, #reportOverlay.open, #feedbackOverlay.open, #participantsOverlay.open, #verifyOverlay.open{display:flex;}
+  #modalOverlay.open, #userCardOverlay.open, #reportOverlay.open, #feedbackOverlay.open, #appealOverlay.open, #participantsOverlay.open, #verifyOverlay.open{display:flex;}
   .modalbox{
     width:100%; max-width:460px; background:var(--surface);
     border-top-left-radius:20px; border-top-right-radius:20px;
@@ -620,6 +620,19 @@
   </div>
 </div>
 
+<!-- APPEAL -->
+<div id="appealOverlay">
+  <div class="modalbox">
+    <h3 data-i18n="appeal_title">Apelar los reportes</h3>
+    <div class="hint" style="margin-top:8px;" data-i18n="appeal_desc"></div>
+    <div class="field" style="margin-top:12px;">
+      <textarea id="appealText" maxlength="1000" data-i18n-ph="appeal_ph" placeholder="Explica por qué crees que los reportes no son justos..." oninput="document.getElementById('appealSendBtn').disabled = !this.value.trim()"></textarea>
+    </div>
+    <button class="primary-btn" id="appealSendBtn" onclick="submitAppeal()" disabled data-i18n="appeal_send">Enviar apelación</button>
+    <button class="secondary-btn" onclick="closeAppeal()" data-i18n="modal_cancel_default">Cancelar</button>
+  </div>
+</div>
+
 <!-- FEEDBACK -->
 <div id="feedbackOverlay">
   <div class="modalbox">
@@ -691,6 +704,7 @@ let reportCounts = {};
 let myReportedIds = new Set();
 let reportTargetId = null;
 let reportReason = null;
+let myAppealPending = false;
 
 /* ================= DATA (categories / i18n helpers, unchanged) ================= */
 const CATEGORIES = [
@@ -772,6 +786,30 @@ async function checkVerifyCode(){
   } else {
     verMsg('ver_err_' + (res.error || 'server_error'), false);
   }
+}
+function openAppeal(){
+  document.getElementById('appealText').value = '';
+  document.getElementById('appealSendBtn').disabled = true;
+  document.getElementById('appealOverlay').classList.add('open');
+}
+function closeAppeal(){
+  document.getElementById('appealOverlay').classList.remove('open');
+}
+async function submitAppeal(){
+  const text = document.getElementById('appealText').value.trim().slice(0, 1000);
+  if(!text || !myProfile) return;
+  const btn = document.getElementById('appealSendBtn');
+  btn.disabled = true;
+  const {error} = await sb.from('appeals').insert({user_id: myProfile.id, message: text});
+  if(error && error.code !== '23505'){
+    btn.disabled = false;
+    showToast(t('appeal_error'), '', null);
+    return;
+  }
+  myAppealPending = true;
+  closeAppeal();
+  if(document.getElementById('profileScreen').classList.contains('open') && !profileEditing) renderProfile();
+  showToast(t('appeal_thanks'), t('appeal_thanks_sub'), null);
 }
 function openFeedback(){
   document.getElementById('feedbackText').value = '';
@@ -915,7 +953,7 @@ const TRANSLATIONS = {
     report_already:'Reportado ✓', report_error:'No se ha podido enviar el reporte',
     report_warning:'⚠ Acumula {n} reportes de otros usuarios',
     feedback_ph:'Cuéntanos qué mejorarías o qué falla...', feedback_send_btn:'Enviar',
-    feedback_thanks:'¡Gracias!', feedback_thanks_sub:'Hemos recibido tu mensaje.', feedback_error:'No se ha podido enviar',
+    feedback_thanks:'¡Gracias!', feedback_thanks_sub:'Hemos recibido tu mensaje.', appeal_notice:'⚠ Tu perfil acumula {n} reportes de otros usuarios y los demás ven un aviso. Si crees que son falsos, puedes apelar.', appeal_btn:'Apelar los reportes', appeal_title:'Apelar los reportes', appeal_desc:'Revisaremos tu caso. Cuéntanos por qué crees que los reportes no son justos.', appeal_ph:'Explica por qué crees que los reportes no son justos...', appeal_send:'Enviar apelación', appeal_pending:'Apelación enviada. La revisaremos pronto.', appeal_thanks:'Apelación enviada', appeal_thanks_sub:'La revisaremos pronto.', appeal_error:'No se ha podido enviar la apelación', feedback_error:'No se ha podido enviar',
     post_see_people:'Ver apuntados ({n})', part_organizer:'Organiza', part_you:'tú',
     part_hint:'Toca a alguien para ver su perfil, escribirle o reportarlo.',
   },
@@ -1025,7 +1063,7 @@ const TRANSLATIONS = {
     report_already:'Reportat ✓', report_error:'No s\'ha pogut enviar el report',
     report_warning:'⚠ Acumula {n} reports d\'altres usuaris',
     feedback_ph:'Explica\'ns què milloraries o què falla...', feedback_send_btn:'Enviar',
-    feedback_thanks:'Gràcies!', feedback_thanks_sub:'Hem rebut el teu missatge.', feedback_error:'No s\'ha pogut enviar',
+    feedback_thanks:'Gràcies!', feedback_thanks_sub:'Hem rebut el teu missatge.', appeal_notice:'⚠ El teu perfil acumula {n} reports d\'altres usuaris i la resta veu un avís. Si creus que són falsos, pots apel·lar.', appeal_btn:'Apel·la els reports', appeal_title:'Apel·la els reports', appeal_desc:'Revisarem el teu cas. Explica\'ns per què creus que els reports no són justos.', appeal_ph:'Explica per què creus que els reports no són justos...', appeal_send:'Envia l\'apel·lació', appeal_pending:'Apel·lació enviada. La revisarem aviat.', appeal_thanks:'Apel·lació enviada', appeal_thanks_sub:'La revisarem aviat.', appeal_error:'No s\'ha pogut enviar l\'apel·lació', feedback_error:'No s\'ha pogut enviar',
     post_see_people:'Veure apuntats ({n})', part_organizer:'Organitza', part_you:'tu',
     part_hint:'Toca algú per veure el seu perfil, escriure-li o reportar-lo.',
   },
@@ -1135,7 +1173,7 @@ const TRANSLATIONS = {
     report_already:'Reported ✓', report_error:'Couldn\'t send the report',
     report_warning:'⚠ Has {n} reports from other users',
     feedback_ph:'Tell us what you\'d improve or what\'s broken...', feedback_send_btn:'Send',
-    feedback_thanks:'Thank you!', feedback_thanks_sub:'We\'ve received your message.', feedback_error:'Couldn\'t send it',
+    feedback_thanks:'Thank you!', feedback_thanks_sub:'We\'ve received your message.', appeal_notice:'⚠ Your profile has {n} reports from other users and others see a warning. If you think they are false, you can appeal.', appeal_btn:'Appeal the reports', appeal_title:'Appeal the reports', appeal_desc:'We will review your case. Tell us why you think the reports are unfair.', appeal_ph:'Explain why you think the reports are unfair...', appeal_send:'Send appeal', appeal_pending:'Appeal sent. We will review it soon.', appeal_thanks:'Appeal sent', appeal_thanks_sub:'We will review it soon.', appeal_error:'Couldn\'t send the appeal', feedback_error:'Couldn\'t send it',
     post_see_people:'See who joined ({n})', part_organizer:'Organiser', part_you:'you',
     part_hint:'Tap someone to view their profile, message or report them.',
   }
@@ -1403,7 +1441,7 @@ async function logout(){
   unsubscribeFriendshipsRealtime();
   unsubscribePostsRealtime();
   unsubscribeInboxRealtime();
-  unreadKeys = new Set(); blockedIds = new Set(); lastReadMap = {}; knownPendingIds = null; hideToast(); reportCounts = {}; myReportedIds = new Set();
+  unreadKeys = new Set(); blockedIds = new Set(); lastReadMap = {}; knownPendingIds = null; hideToast(); reportCounts = {}; myReportedIds = new Set(); myAppealPending = false;
   session = null; myProfile = null; myPrivate = null;
   cache = { posts: [], profilesById: {}, participantsByPost: {}, dmThreads: [], friendships: [] };
   chatsSubTab = 'chats';
@@ -1681,7 +1719,7 @@ async function showApp(){
   await loadLastRead();
   await computeUnread();
   subscribeInboxRealtime();
-  loadReportData();
+  loadReportData().then(function(){ if(!profileEditing && document.getElementById('profileScreen').classList.contains('open')) renderProfile(); });
   renderProfile();
   maybeShowInstall();
 }
@@ -2402,13 +2440,15 @@ async function contactFromCard(){
 }
 async function loadReportData(){
   if(!myProfile) return;
-  const [c, m] = await Promise.all([
+  const [c, m, ap] = await Promise.all([
     sb.rpc('report_counts'),
-    sb.from('reports').select('reported_id').eq('reporter_id', myProfile.id)
+    sb.from('reports').select('reported_id').eq('reporter_id', myProfile.id),
+    sb.from('appeals').select('id').eq('status', 'pending').limit(1)
   ]);
   reportCounts = {};
   (c.data || []).forEach(r => { reportCounts[r.reported_id] = Number(r.n); });
   myReportedIds = new Set((m.data || []).map(r => r.reported_id));
+  myAppealPending = !!(ap.data && ap.data.length);
 }
 const REPORT_REASONS = ['fake_student', 'fake_profile', 'harassment', 'inappropriate', 'spam', 'other'];
 function reportFromCard(){
@@ -2476,7 +2516,10 @@ async function openDmWith(targetId){
 /* ================= SCREENS ================= */
 function openScreen(id){
   document.getElementById(id).classList.add('open');
-  if(id === 'profileScreen') renderProfile();
+  if(id === 'profileScreen'){
+    renderProfile();
+    loadReportData().then(function(){ if(!profileEditing) renderProfile(); });
+  }
 }
 function closeScreen(id){
   document.getElementById(id).classList.remove('open');
@@ -2549,6 +2592,7 @@ function renderProfile(){
       <div class="profile-sub">${p.origin==='local' ? t('origin_local') : t('origin_intl')} &middot; ${escapeHtml(p.uni || '—')}</div>
       ${verified ? `<span class="badge-verified">${t('badge_verified')}</span>` : `<span class="badge-unverified">${t('badge_unverified')}</span><button class="secondary-btn" style="margin-top:10px;" onclick="openVerify()">${t('ver_btn')}</button>`}
     </div>
+    ${reportCounts[p.id] ? `<div class="reportwarn" style="margin-top:14px;">${t('appeal_notice', {n: reportCounts[p.id]})}</div>` + (myAppealPending ? `<div class="hint" style="margin-bottom:10px;">${t('appeal_pending')}</div>` : `<button class="secondary-btn" style="margin-top:0;" onclick="openAppeal()">${t('appeal_btn')}</button>`) : ''}
     <div class="infogrid">
       <div class="inforow"><span class="k">${t('profile_idiom')}</span><span class="v">${escapeHtml(p.lang || '—')}</span></div>
       <div class="inforow"><span class="k">${t('profile_uni')}</span><span class="v">${escapeHtml(p.uni || '—')}</span></div>
