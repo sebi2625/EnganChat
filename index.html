@@ -794,12 +794,15 @@ async function submitFeedback(){
   showToast(t('feedback_thanks'), t('feedback_thanks_sub'), null);
 }
 
-const VERIFIED_DOMAIN_HINTS = ['.edu', '.ac.', 'upc.edu', 'estudiantat.upc.edu', 'ub.edu', 'alumnes.ub.edu', 'uab.cat', 'uab.es', 'uoc.edu', 'url.edu', 'uic.es', 'esade.edu', 'ie.edu', 'uned.es', 'urv.cat', 'udg.edu', 'udl.cat', 'uvic.cat'];
+// Keep in sync with the verify-email Edge Function
+const UNI_STUDENT_EXACT = ['estudiantat.upc.edu', 'est.fib.upc.edu', 'alumnes.ub.edu', 'autonoma.cat', 'e-campus.uab.cat'];
+const UNI_INSTITUTION_SUFFIX = ['upf.edu', 'uoc.edu', 'udg.edu', 'udl.cat', 'urv.cat', 'uvic.cat', 'url.edu', 'salleurl.edu', 'uic.es', 'esade.edu', 'uao.es', 'eada.edu', 'bau.cat', 'elisava.net', 'escac.es', 'eae.es', 'iese.edu', 'barcelonagse.eu'];
 function isUniEmail(email){
   const at = email.split('@')[1];
   if(!at) return false;
   const d = at.toLowerCase();
-  return VERIFIED_DOMAIN_HINTS.some(h => d.includes(h));
+  if(UNI_STUDENT_EXACT.includes(d)) return true;
+  return UNI_INSTITUTION_SUFFIX.some(a => d === a || d.endsWith('.' + a));
 }
 
 /* ================= I18N ================= */
@@ -826,7 +829,7 @@ const TRANSLATIONS = {
     reg_password_label:'Contraseña', reg_password_ph:'Elige una contraseña',
     reg_email_label:'Correo universitario', reg_email_ph:'nombre@upc.edu',
     reg_email_hint:'Solo se usa para confirmar que eres estudiante — nunca se muestra en tu perfil ni a otros usuarios.',
-    verify_yes:'&#127891; Parece correo universitario', verify_no:'Correo no reconocido como universitario',
+    verify_yes:'&#127891; Correo universitario reconocido · pendiente de verificar (lo harás desde tu perfil)', verify_no:'Correo no reconocido: podrás usar la app, pero no verificarte como estudiante',
     reg_photo_label:'Foto de perfil (opcional)', reg_photo_btn:'Elegir foto',
     reg_name_label:'Nombre', reg_name_ph:'Tu nombre',
     reg_origin_label:'¿Eres local o internacional?', origin_local:'Local', origin_intl:'Internacional',
@@ -879,7 +882,7 @@ const TRANSLATIONS = {
     profile_created:'Planes creados', profile_joined:'Planes apuntado', profile_logout:'Cerrar sesión',
     profile_none:'Ninguno', profile_change_photo:'Cambiar foto', profile_save:'Guardar cambios', profile_cancel:'Cancelar',
     logout_confirm:'Tu cuenta sigue guardada en el servidor, puedes volver a entrar cuando quieras desde cualquier dispositivo.',
-    badge_verified:'&#127891; Correo universitario', badge_unverified:'Correo sin verificar como universitario',
+    badge_verified:'&#127891; Correo universitario', badge_unverified:'Correo universitario pendiente de verificación',
     filter_all:'Todos', post_search_tag:'Buscan gente', post_event_tag:'Evento', post_looking_tag:'Busca equipo',
     post_directions:'Cómo llegar &rarr;', post_full:'Completo', post_spots:'plazas',
     post_join:'Apuntarme', post_joined:'Apuntado ✓',
@@ -938,7 +941,7 @@ const TRANSLATIONS = {
     reg_password_label:'Contrasenya', reg_password_ph:'Tria una contrasenya',
     reg_email_label:'Correu universitari', reg_email_ph:'nom@upc.edu',
     reg_email_hint:'Només s\'utilitza per confirmar que ets estudiant — mai es mostra al teu perfil ni a altres usuaris.',
-    verify_yes:'&#127891; Sembla un correu universitari', verify_no:'Correu no reconegut com a universitari',
+    verify_yes:'&#127891; Correu universitari reconegut · pendent de verificar (ho faràs des del teu perfil)', verify_no:'Correu no reconegut: podràs fer servir l\'app, però no verificar-te com a estudiant',
     reg_photo_label:'Foto de perfil (opcional)', reg_photo_btn:'Tria una foto',
     reg_name_label:'Nom', reg_name_ph:'El teu nom',
     reg_origin_label:'Ets local o internacional?', origin_local:'Local', origin_intl:'Internacional',
@@ -991,7 +994,7 @@ const TRANSLATIONS = {
     profile_created:'Plans creats', profile_joined:'Plans apuntat', profile_logout:'Tanca sessió',
     profile_none:'Cap', profile_change_photo:'Canviar foto', profile_save:'Desar canvis', profile_cancel:'Cancel·lar',
     logout_confirm:'El teu compte segueix guardat al servidor, pots tornar a entrar quan vulguis des de qualsevol dispositiu.',
-    badge_verified:'&#127891; Correu universitari', badge_unverified:'Correu sense verificar com a universitari',
+    badge_verified:'&#127891; Correu universitari', badge_unverified:'Correu universitari pendent de verificació',
     filter_all:'Tots', post_search_tag:'Busquen gent', post_event_tag:'Esdeveniment', post_looking_tag:'Busca equip',
     post_directions:'Com arribar-hi &rarr;', post_full:'Complet', post_spots:'places',
     post_join:'Apuntar-me', post_joined:'Apuntat ✓',
@@ -1050,7 +1053,7 @@ const TRANSLATIONS = {
     reg_password_label:'Password', reg_password_ph:'Choose a password',
     reg_email_label:'University email', reg_email_ph:'name@upc.edu',
     reg_email_hint:'Only used to confirm you\'re a student — never shown on your profile or to other users.',
-    verify_yes:'&#127891; Looks like a university email', verify_no:'Email not recognized as a university one',
+    verify_yes:'&#127891; University email recognised · pending verification (do it from your profile)', verify_no:'Email not recognised: you can still use the app, but not get verified as a student',
     reg_photo_label:'Profile photo (optional)', reg_photo_btn:'Choose photo',
     reg_name_label:'Name', reg_name_ph:'Your name',
     reg_origin_label:'Are you local or international?', origin_local:'Local', origin_intl:'International',
@@ -1103,7 +1106,7 @@ const TRANSLATIONS = {
     profile_created:'Plans created', profile_joined:'Plans joined', profile_logout:'Log out',
     profile_none:'None', profile_change_photo:'Change photo', profile_save:'Save changes', profile_cancel:'Cancel',
     logout_confirm:'Your account stays saved on the server, you can log back in anytime from any device.',
-    badge_verified:'&#127891; University email', badge_unverified:'Email not verified as university one',
+    badge_verified:'&#127891; University email', badge_unverified:'University email pending verification',
     filter_all:'All', post_search_tag:'Looking for people', post_event_tag:'Event', post_looking_tag:'Looking for a team',
     post_directions:'Directions &rarr;', post_full:'Full', post_spots:'spots',
     post_join:'Join', post_joined:'Joined ✓',
