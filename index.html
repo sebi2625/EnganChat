@@ -792,7 +792,7 @@ const TRANSLATIONS = {
     chat_first_msg:'Aún no hay mensajes, ¡escribe el primero!',
     saved_empty:'Aún no te has apuntado a nada', saved_empty_sub:'Explora Inicio y apúntate a un plan para verlo aquí.',
     feed_empty:'No hay planes con este filtro', feed_empty_sub:'Prueba otra categoría o crea tú el primer plan.',
-    profile_title:'Perfil', profile_idiom:'Idioma', profile_uni:'Universidad', profile_sports:'Deportes de interés',
+    profile_realname:'Nombre', profile_title:'Perfil', profile_idiom:'Idioma', profile_uni:'Universidad', profile_sports:'Deportes de interés',
     profile_created:'Planes creados', profile_joined:'Planes apuntado', profile_logout:'Cerrar sesión',
     profile_none:'Ninguno', profile_change_photo:'Cambiar foto', profile_save:'Guardar cambios', profile_cancel:'Cancelar',
     logout_confirm:'Tu cuenta sigue guardada en el servidor, puedes volver a entrar cuando quieras desde cualquier dispositivo.',
@@ -903,7 +903,7 @@ const TRANSLATIONS = {
     chat_first_msg:'Encara no hi ha missatges, escriu el primer!',
     saved_empty:'Encara no t\'has apuntat a res', saved_empty_sub:'Explora Inici i apunta\'t a un pla per veure\'l aquí.',
     feed_empty:'No hi ha plans amb aquest filtre', feed_empty_sub:'Prova una altra categoria o crea tu el primer pla.',
-    profile_title:'Perfil', profile_idiom:'Idioma', profile_uni:'Universitat', profile_sports:'Esports d\'interès',
+    profile_realname:'Nom', profile_title:'Perfil', profile_idiom:'Idioma', profile_uni:'Universitat', profile_sports:'Esports d\'interès',
     profile_created:'Plans creats', profile_joined:'Plans apuntat', profile_logout:'Tanca sessió',
     profile_none:'Cap', profile_change_photo:'Canviar foto', profile_save:'Desar canvis', profile_cancel:'Cancel·lar',
     logout_confirm:'El teu compte segueix guardat al servidor, pots tornar a entrar quan vulguis des de qualsevol dispositiu.',
@@ -1014,7 +1014,7 @@ const TRANSLATIONS = {
     chat_first_msg:'No messages yet, write the first one!',
     saved_empty:'You haven\'t joined anything yet', saved_empty_sub:'Explore Home and join a plan to see it here.',
     feed_empty:'No plans match this filter', feed_empty_sub:'Try another category or create the first plan yourself.',
-    profile_title:'Profile', profile_idiom:'Language', profile_uni:'University', profile_sports:'Sports of interest',
+    profile_realname:'Name', profile_title:'Profile', profile_idiom:'Language', profile_uni:'University', profile_sports:'Sports of interest',
     profile_created:'Plans created', profile_joined:'Plans joined', profile_logout:'Log out',
     profile_none:'None', profile_change_photo:'Change photo', profile_save:'Save changes', profile_cancel:'Cancel',
     logout_confirm:'Your account stays saved on the server, you can log back in anytime from any device.',
@@ -1083,6 +1083,7 @@ let state = loadUiPrefs();
 function normalizeNickname(raw){
   return (raw||'').trim().toLowerCase().replace(/[^a-z0-9_]/g,'');
 }
+function dn(p){ return (p && (p.nickname || p.name)) || '?'; }
 function authEmailFor(nickname){
   return nickname + '@enganchat.local';
 }
@@ -1368,7 +1369,7 @@ async function refreshFriendships(){
   await ensureProfilesCached(cache.friendships.flatMap(f=>[f.requester_id, f.addressee_id]));
   if(knownPendingIds){
     pendingReceivedRequests().filter(r=>!knownPendingIds.has(r.id)).forEach(r=>{
-      const nm = (cache.profilesById[r.requester_id]||{}).name || '?';
+      const nm = dn(cache.profilesById[r.requester_id]);
       showToast(t('toast_friend_req', {name: nm}), t('toast_friend_req_sub'), {kind:'friend'});
     });
   }
@@ -1455,7 +1456,7 @@ async function onIncomingMessage(type, m){
   unreadKeys.add(chatKey(type, id));
   updateChatsDot();
   if(state.tab === 'chats' && chatsSubTab === 'chats' && !isChatScreenOpen()) renderChatsList();
-  const sender = (cache.profilesById[m.sender_id] || {}).name || '?';
+  const sender = dn(cache.profilesById[m.sender_id]);
   let title = sender;
   if(type === 'post'){
     const post = cache.posts.find(p => p.id === id);
@@ -1648,7 +1649,7 @@ function participantIdsOf(post){
 }
 function partRowHtml(uid, badge, isMe){
   const u = cache.profilesById[uid] || {};
-  const name = u.name || '?';
+  const name = dn(u);
   const avatarInner = u.photo_url ? ('<img src="' + escapeAttr(u.photo_url) + '" style="width:100%;height:100%;object-fit:cover;">') : escapeHtml(name.charAt(0).toUpperCase());
   const click = isMe ? '' : (' onclick="openUserCard(\'' + uid + '\')" style="cursor:pointer;"');
   const warn = (!isMe && reportCounts[uid]) ? '<span style="color:var(--coral); margin-left:6px;">&#9888;</span>' : '';
@@ -1681,7 +1682,7 @@ function getParticipants(post){
   if(myProfile) ids.delete(myProfile.id);
   return Array.from(ids).map(id=>{
     const pr = cache.profilesById[id];
-    return {id, name: pr ? pr.name : '?', photo: pr ? pr.photo_url : null};
+    return {id, name: dn(pr), photo: pr ? pr.photo_url : null};
   });
 }
 function renderHistoryBlock(history, showEmptyHint){
@@ -1756,7 +1757,7 @@ function renderFeed(){
         <div class="post-footer">
           <div class="creator" ${(!isOwner && creatorProfile) ? `style="cursor:pointer;" onclick="openUserCard('${p.creator_id}')"` : ''}>
             <span class="flagdot ${creatorProfile && creatorProfile.origin==='intl'?'intl':''}"></span>
-            ${escapeHtml(creatorProfile ? creatorProfile.name : '—')}
+            ${escapeHtml(creatorProfile ? dn(creatorProfile) : '—')}
           </div>
           <div style="display:flex; align-items:center; gap:10px;">
             ${p.mode==='looking'
@@ -1794,7 +1795,7 @@ async function toggleJoin(id){
   } else {
     if(!isLooking && spotsTakenFor(post) >= post.spots_total) return;
     await sb.from('post_participants').insert({post_id: id, user_id: myProfile.id});
-    const sysText = t(isLooking ? 'sys_contacted' : 'sys_joined', {name: myProfile.name});
+    const sysText = t(isLooking ? 'sys_contacted' : 'sys_joined', {name: dn(myProfile)});
     await sb.from('post_messages').insert({post_id: id, sender_id: myProfile.id, is_system:true, text: sysText});
   }
   await refreshData();
@@ -1980,7 +1981,7 @@ async function renderChatThreadsList(){
   const dmItems = cache.dmThreads.map(d=>{
     const otherId = d.user_a === myProfile.id ? d.user_b : d.user_a;
     const other = cache.profilesById[otherId];
-    const name = other ? other.name : '—';
+    const name = other ? dn(other) : '—';
     return { type:'dm', id: d.id, title: name,
       avatarHtml: `<div class="chatlist-avatar" style="background:var(--surface-2); color:var(--lime);">${escapeHtml((name||'?').charAt(0).toUpperCase())}</div>` };
   });
@@ -2004,7 +2005,7 @@ async function renderChatThreadsList(){
     if(last){
       if(last.is_system) previewText = last.text;
       else {
-        const authorName = last.sender_id===myProfile.id ? myProfile.name : ((cache.profilesById[last.sender_id]||{}).name || '?');
+        const authorName = last.sender_id===myProfile.id ? dn(myProfile) : dn(cache.profilesById[last.sender_id]);
         previewText = authorName + ': ' + last.text;
       }
     }
@@ -2021,7 +2022,7 @@ async function renderChatThreadsList(){
 /* ---- friends tab ---- */
 function friendRowHtml(uid, actionsHtml){
   const u = cache.profilesById[uid] || {};
-  const name = u.name || '?';
+  const name = dn(u);
   const avatarInner = u.photo_url ? ('<img src="' + escapeAttr(u.photo_url) + '" style="width:100%;height:100%;object-fit:cover;">') : escapeHtml(name.charAt(0).toUpperCase());
   return `
     <div class="chatlist-row">
@@ -2111,7 +2112,7 @@ async function openChat(type, id){
       otherId = thread.user_a === myProfile.id ? thread.user_b : thread.user_a;
       await ensureProfilesCached([otherId]);
       const other = cache.profilesById[otherId];
-      if(other) title = other.name;
+      if(other) title = dn(other);
     }
   }
   const ttl = document.getElementById('chatDetailTitle');
@@ -2174,7 +2175,7 @@ function renderChatMsgs(){
         return `<div style="text-align:center; font-size:11.5px; color:var(--muted); margin:6px 0;">${escapeHtml(m.text)}</div>`;
       }
       const self = m.sender_id === myProfile.id;
-      const authorName = self ? '' : ((cache.profilesById[m.sender_id]||{}).name || '?');
+      const authorName = self ? '' : dn(cache.profilesById[m.sender_id]);
       return `<div class="msg ${self?'self':'other'}">${self?'':`<div class="who" style="cursor:pointer;" onclick="openUserCard('${m.sender_id}')">${escapeHtml(authorName)}</div>`}${escapeHtml(m.text)}</div>`;
     }).join('');
   }
@@ -2198,17 +2199,18 @@ async function openUserCard(uid){
   const u = cache.profilesById[uid];
   if(!u) return;
   ucTargetId = uid;
-  document.getElementById('ucName').textContent = u.name || '?';
+  document.getElementById('ucName').textContent = dn(u);
   const originLbl = u.origin === 'intl' ? t('origin_intl') : t('origin_local');
   document.getElementById('ucSub').textContent = u.uni ? (originLbl + ' · ' + u.uni) : originLbl;
   const avatarWrap = document.getElementById('ucAvatar');
-  avatarWrap.innerHTML = u.photo_url ? `<img src="${u.photo_url}">` : `<span>${escapeHtml((u.name||'?').charAt(0).toUpperCase())}</span>`;
+  avatarWrap.innerHTML = u.photo_url ? `<img src="${u.photo_url}">` : `<span>${escapeHtml(dn(u).charAt(0).toUpperCase())}</span>`;
   const sportsHtml = (u.sports && u.sports.length)
     ? u.sports.map(function(s){ return '<span class="microchip">' + catLabel(catById(s)) + '</span>'; }).join('')
     : '<span class="microchip">' + t('profile_none') + '</span>';
   const createdN = cache.posts.filter(function(pp){ return pp.creator_id === uid; }).length;
   const joinedN = cache.posts.filter(function(pp){ const st = cache.participantsByPost[pp.id]; return pp.creator_id !== uid && st && st.has(uid); }).length;
   document.getElementById('ucInfo').innerHTML =
+    '<div class="inforow"><span class="k">' + t('profile_realname') + '</span><span class="v">' + escapeHtml(u.name || '—') + '</span></div>' +
     '<div class="inforow"><span class="k">' + t('reg_lang_label') + '</span><span class="v">' + escapeHtml(u.lang || '—') + '</span></div>' +
     '<div class="inforow"><span class="k">' + t('profile_sports') + '</span><span class="v"><div class="chipwrap">' + sportsHtml + '</div></span></div>' +
     '<div class="inforow"><span class="k">' + t('profile_created') + '</span><span class="v">' + createdN + '</span></div>' +
@@ -2250,7 +2252,7 @@ function reportFromCard(){
   reportTargetId = ucTargetId;
   reportReason = null;
   const u = cache.profilesById[reportTargetId] || {};
-  document.getElementById('reportTitle').textContent = t('report_title', {name: u.name || '?'});
+  document.getElementById('reportTitle').textContent = t('report_title', {name: dn(u)});
   document.getElementById('reportDetails').value = '';
   document.getElementById('reportSendBtn').disabled = true;
   renderReportReasons();
