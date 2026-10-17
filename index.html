@@ -420,11 +420,11 @@
       </div>
       <div class="field">
         <label data-i18n="create_title_label">Título</label>
-        <input type="text" id="fTitle" data-i18n-ph="create_title_ph" placeholder="Ej: Partido sábado, buscamos portero">
+        <input type="text" id="fTitle" maxlength="100" data-i18n-ph="create_title_ph" placeholder="Ej: Partido sábado, buscamos portero">
       </div>
       <div class="field">
         <label data-i18n="create_desc_label">Descripción (opcional)</label>
-        <textarea id="fDesc" data-i18n-ph="create_desc_ph" placeholder="Cuenta el plan: nivel, ambiente, qué buscas..."></textarea>
+        <textarea id="fDesc" maxlength="1000" data-i18n-ph="create_desc_ph" placeholder="Cuenta el plan: nivel, ambiente, qué buscas..."></textarea>
       </div>
       <div class="field">
         <label data-i18n="create_date_label">Fecha (opcional)</label>
@@ -437,11 +437,11 @@
       </div>
       <div class="field">
         <label data-i18n="create_loc_label">Ubicación (opcional)</label>
-        <input type="text" id="fLoc" data-i18n-ph="create_loc_ph" placeholder="Ej: Camp Municipal, Poble Sec">
+        <input type="text" id="fLoc" maxlength="200" data-i18n-ph="create_loc_ph" placeholder="Ej: Camp Municipal, Poble Sec">
       </div>
       <div class="field">
         <label data-i18n="create_maplink_label">Enlace de ubicación (opcional)</label>
-        <input type="text" id="fMapLink" data-i18n-ph="create_maplink_ph" placeholder="Pega aquí el link de Google Maps">
+        <input type="text" id="fMapLink" maxlength="500" data-i18n-ph="create_maplink_ph" placeholder="Pega aquí el link de Google Maps">
       </div>
       <div class="field" id="spotsField">
         <label id="spotsFieldLabel">Plazas / gente que falta (opcional)</label>
@@ -464,7 +464,7 @@
     </div>
     <div class="chatmsgs" id="chatMsgs"></div>
     <div class="chat-inputrow">
-      <input type="text" id="chatInput" data-i18n-ph="chat_input_ph" placeholder="Escribe un mensaje..." onkeydown="if(event.key==='Enter') sendChatMsg()">
+      <input type="text" id="chatInput" maxlength="1000" data-i18n-ph="chat_input_ph" placeholder="Escribe un mensaje..." onkeydown="if(event.key==='Enter') sendChatMsg()">
       <button class="chat-sendbtn" onclick="sendChatMsg()">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"></path><path d="M22 2l-7 20-4-9-9-4z"></path></svg>
       </button>
@@ -521,7 +521,7 @@
       <div class="ob-step-label" data-i18n="step_account">Cuenta</div>
       <div class="field">
         <label data-i18n="reg_nickname_label">Nickname (tu usuario para entrar)</label>
-        <input type="text" id="obNickname" data-i18n-ph="reg_nickname_ph" placeholder="Ej: marcv17" autocapitalize="off" oninput="previewNickname()">
+        <input type="text" id="obNickname" maxlength="30" data-i18n-ph="reg_nickname_ph" placeholder="Ej: marcv17" autocapitalize="off" oninput="previewNickname()">
         <div id="nicknamePreview"></div>
       </div>
       <div class="field">
@@ -548,7 +548,7 @@
       </div>
       <div class="field">
         <label data-i18n="reg_name_label">Nombre</label>
-        <input type="text" id="obName" data-i18n-ph="reg_name_ph" placeholder="Tu nombre" oninput="syncPreviewLetter()">
+        <input type="text" id="obName" maxlength="40" data-i18n-ph="reg_name_ph" placeholder="Tu nombre" oninput="syncPreviewLetter()">
       </div>
       <div class="field">
         <label data-i18n="reg_origin_label">¿Eres local o internacional?</label>
@@ -613,8 +613,9 @@
     <div id="ucBadge"></div>
     <div class="reportwarn" id="ucWarn" style="display:none;"></div>
     <div class="infogrid" id="ucInfo" style="margin-bottom:14px;"></div>
-    <button class="primary-btn" onclick="contactFromCard()" data-i18n="contact_btn">Contactar</button>
+    <button class="primary-btn" id="ucContactBtn" onclick="contactFromCard()" data-i18n="contact_btn">Contactar</button>
     <button class="secondary-btn" id="ucReportBtn" style="color:var(--coral); border-color:var(--coral);" onclick="reportFromCard()" data-i18n="report_btn">Reportar</button>
+    <button class="secondary-btn" id="ucBlockBtn" style="color:var(--coral); border-color:var(--coral);" onclick="toggleBlockFromCard()">Bloquear</button>
     <button class="secondary-btn" onclick="closeUserCard()" data-i18n="close_btn">Cerrar</button>
   </div>
 </div>
@@ -680,6 +681,7 @@ let postsChannel = null;
 let partsRefreshTimer = null;
 let partOpenPostId = null;
 let unreadKeys = new Set();
+let blockedIds = new Set();
 let lastReadMap = {};
 let inboxChannel = null;
 let toastTimer = null;
@@ -860,8 +862,6 @@ const TRANSLATIONS = {
     history_empty_hint:'Aquí aparecerán tus planes pasados con la gente que estuvo, para poder contactarla o reportarla si hace falta.',
     contact_btn:'Contactar', report_btn:'Reportar',
     close_btn:'Cerrar',
-    report_subject:'Reporte de usuario en EnganChat: {name}',
-    report_body:'Hola, quiero reportar a este usuario: {name} (nickname: {nick}).\nMotivo:\n',
     create_loc_label:'Ubicación (opcional)', create_loc_ph:'Ej: Camp Municipal, Poble Sec',
     create_maplink_label:'Enlace de ubicación (opcional)', create_maplink_ph:'Pega aquí el link de Google Maps',
     create_spots_label:'Plazas / gente que falta (opcional)', create_spots_ph:'Ej: 2',
@@ -905,7 +905,7 @@ const TRANSLATIONS = {
     friend_list_empty_sub:'Búscalos arriba por su nickname para empezar.',
     friend_remove_title:'Eliminar amigo', friend_remove_msg:'Dejaréis de ser amigos. Podréis volver a añadiros más adelante.', friend_remove_btn:'Eliminar',
     friend_no_results:'No se ha encontrado a nadie con ese nickname.',
-    toast_friend_req:'{name} te ha enviado una solicitud de amistad', toast_friend_req_sub:'Toca para verla',
+    toast_friend_req:'{name} te ha enviado una solicitud de amistad', toast_friend_req_sub:'Toca para verla', block_btn:'Bloquear usuario', unblock_btn:'Desbloquear usuario', block_title:'¿Bloquear a {name}?', block_msg:'No verás sus planes ni mensajes y no podrá escribirte ni enviarte solicitudes. Puedes desbloquearlo cuando quieras desde su perfil.', block_done:'Usuario bloqueado', unblock_done:'Usuario desbloqueado', block_error:'No se ha podido completar la acción', block_cannot_dm:'Has bloqueado a este usuario', publish_error:'No se ha podido guardar el plan', send_error:'No se ha podido enviar el mensaje',
     ver_btn:'Verificar correo universitario', ver_title:'Verifica tu correo universitario', ver_hint:'Te enviaremos un código de 6 dígitos. Es opcional: si lo verificas, tu perfil mostrará una insignia de estudiante.', ver_send:'Enviar código', ver_check:'Verificar', ver_sent:'Código enviado. Revisa tu correo (y la carpeta de spam).', ver_ok:'Perfil verificado ✓', ver_badge:'Estudiante verificado', ver_err_not_configured:'La verificación aún no está disponible. Inténtalo más adelante.', ver_err_bad_email:'Ese correo no es válido.', ver_err_domain_not_allowed:'Ese correo no parece de una universidad compatible.', ver_err_email_in_use:'Ese correo ya está verificado en otra cuenta.', ver_err_too_many_sends:'Has pedido demasiados códigos hoy. Inténtalo mañana.', ver_err_too_many_tries:'Demasiados intentos. Vuelve a probar más tarde.', ver_err_wrong_code:'Código incorrecto.', ver_err_no_pending:'El código ha caducado. Pide uno nuevo.', ver_err_bad_code:'Escribe los 6 dígitos del código.', ver_err_send_failed:'No se ha podido enviar el correo. Inténtalo de nuevo.', ver_err_server_error:'Algo ha fallado. Inténtalo de nuevo.', ver_err_not_authenticated:'Vuelve a iniciar sesión.',
     report_title:'Reportar a {name}',
     report_r_fake_student:'No es estudiante / correo falso', report_r_fake_profile:'Perfil falso o suplantación', report_r_harassment:'Acoso o comportamiento agresivo', report_r_inappropriate:'Contenido inapropiado', report_r_spam:'Spam o publicidad', report_r_other:'Otro motivo',
@@ -972,8 +972,6 @@ const TRANSLATIONS = {
     history_empty_hint:'Aquí apareixeran els teus plans passats amb la gent que hi va ser, per poder-los contactar o reportar si cal.',
     contact_btn:'Contactar', report_btn:'Reportar',
     close_btn:'Tancar',
-    report_subject:'Denúncia d\'usuari a EnganChat: {name}',
-    report_body:'Hola, vull reportar aquest usuari: {name} (nickname: {nick}).\nMotiu:\n',
     create_loc_label:'Ubicació (opcional)', create_loc_ph:'Ex: Camp Municipal, Poble Sec',
     create_maplink_label:'Enllaç d\'ubicació (opcional)', create_maplink_ph:'Enganxa aquí l\'enllaç de Google Maps',
     create_spots_label:'Places / gent que falta (opcional)', create_spots_ph:'Ex: 2',
@@ -1017,7 +1015,7 @@ const TRANSLATIONS = {
     friend_list_empty_sub:'Cerca\'ls a dalt pel seu nickname per començar.',
     friend_remove_title:'Eliminar amic', friend_remove_msg:'Deixareu de ser amics. Podreu tornar-vos a afegir més endavant.', friend_remove_btn:'Eliminar',
     friend_no_results:'No s\'ha trobat ningú amb aquest nickname.',
-    toast_friend_req:'{name} t\'ha enviat una sol·licitud d\'amistat', toast_friend_req_sub:'Toca per veure-la',
+    toast_friend_req:'{name} t\'ha enviat una sol·licitud d\'amistat', toast_friend_req_sub:'Toca per veure-la', block_btn:'Bloqueja l\'usuari', unblock_btn:'Desbloqueja l\'usuari', block_title:'Vols bloquejar {name}?', block_msg:'No veuràs els seus plans ni missatges i no podrà escriure\'t ni enviar-te sol·licituds. Pots desbloquejar-lo quan vulguis des del seu perfil.', block_done:'Usuari bloquejat', unblock_done:'Usuari desbloquejat', block_error:'No s\'ha pogut completar l\'acció', block_cannot_dm:'Has bloquejat aquest usuari', publish_error:'No s\'ha pogut desar el pla', send_error:'No s\'ha pogut enviar el missatge',
     ver_btn:'Verifica el correu universitari', ver_title:'Verifica el teu correu universitari', ver_hint:'T\'enviarem un codi de 6 dígits. És opcional: si el verifiques, el teu perfil mostrarà una insígnia d\'estudiant.', ver_send:'Envia el codi', ver_check:'Verifica', ver_sent:'Codi enviat. Revisa el correu (i la carpeta de spam).', ver_ok:'Perfil verificat ✓', ver_badge:'Estudiant verificat', ver_err_not_configured:'La verificació encara no està disponible. Torna-ho a provar més endavant.', ver_err_bad_email:'Aquest correu no és vàlid.', ver_err_domain_not_allowed:'Aquest correu no sembla d\'una universitat compatible.', ver_err_email_in_use:'Aquest correu ja està verificat en un altre compte.', ver_err_too_many_sends:'Has demanat massa codis avui. Torna-ho a provar demà.', ver_err_too_many_tries:'Massa intents. Torna-ho a provar més tard.', ver_err_wrong_code:'Codi incorrecte.', ver_err_no_pending:'El codi ha caducat. Demana\'n un de nou.', ver_err_bad_code:'Escriu els 6 dígits del codi.', ver_err_send_failed:'No s\'ha pogut enviar el correu. Torna-ho a provar.', ver_err_server_error:'Alguna cosa ha fallat. Torna-ho a provar.', ver_err_not_authenticated:'Torna a iniciar sessió.',
     report_title:'Reportar {name}',
     report_r_fake_student:'No és estudiant / correu fals', report_r_fake_profile:'Perfil fals o suplantació', report_r_harassment:'Assetjament o comportament agressiu', report_r_inappropriate:'Contingut inapropiat', report_r_spam:'Spam o publicitat', report_r_other:'Un altre motiu',
@@ -1084,8 +1082,6 @@ const TRANSLATIONS = {
     history_empty_hint:'Your past plans will show up here with the people who took part, so you can contact or report them if needed.',
     contact_btn:'Contact', report_btn:'Report',
     close_btn:'Close',
-    report_subject:'User report on EnganChat: {name}',
-    report_body:'Hi, I want to report this user: {name} (nickname: {nick}).\nReason:\n',
     create_loc_label:'Location (optional)', create_loc_ph:'E.g: Camp Municipal, Poble Sec',
     create_maplink_label:'Location link (optional)', create_maplink_ph:'Paste the Google Maps link here',
     create_spots_label:'Spots / people needed (optional)', create_spots_ph:'E.g: 2',
@@ -1129,7 +1125,7 @@ const TRANSLATIONS = {
     friend_list_empty_sub:'Search for them above by their nickname to get started.',
     friend_remove_title:'Remove friend', friend_remove_msg:'You\'ll no longer be friends. You can add each other again later.', friend_remove_btn:'Remove',
     friend_no_results:'No one found with that nickname.',
-    toast_friend_req:'{name} sent you a friend request', toast_friend_req_sub:'Tap to view it',
+    toast_friend_req:'{name} sent you a friend request', toast_friend_req_sub:'Tap to view it', block_btn:'Block user', unblock_btn:'Unblock user', block_title:'Block {name}?', block_msg:'You won\'t see their plans or messages, and they won\'t be able to message you or send requests. You can unblock them any time from their profile.', block_done:'User blocked', unblock_done:'User unblocked', block_error:'Couldn\'t complete the action', block_cannot_dm:'You have blocked this user', publish_error:'Couldn\'t save the plan', send_error:'Couldn\'t send the message',
     ver_btn:'Verify university email', ver_title:'Verify your university email', ver_hint:'We\'ll send you a 6-digit code. It\'s optional: if you verify, your profile will show a student badge.', ver_send:'Send code', ver_check:'Verify', ver_sent:'Code sent. Check your inbox (and spam folder).', ver_ok:'Profile verified ✓', ver_badge:'Verified student', ver_err_not_configured:'Verification isn\'t available yet. Please try again later.', ver_err_bad_email:'That email isn\'t valid.', ver_err_domain_not_allowed:'That doesn\'t look like a supported university email.', ver_err_email_in_use:'That email is already verified on another account.', ver_err_too_many_sends:'You\'ve requested too many codes today. Try again tomorrow.', ver_err_too_many_tries:'Too many attempts. Try again later.', ver_err_wrong_code:'Wrong code.', ver_err_no_pending:'The code has expired. Request a new one.', ver_err_bad_code:'Enter the 6 digits of the code.', ver_err_send_failed:'Couldn\'t send the email. Please try again.', ver_err_server_error:'Something went wrong. Please try again.', ver_err_not_authenticated:'Please log in again.',
     report_title:'Report {name}',
     report_r_fake_student:'Not a student / fake email', report_r_fake_profile:'Fake profile or impersonation', report_r_harassment:'Harassment or aggressive behaviour', report_r_inappropriate:'Inappropriate content', report_r_spam:'Spam or advertising', report_r_other:'Other reason',
@@ -1275,8 +1271,8 @@ function previewNickname(){
   const el = document.getElementById('nicknamePreview');
   if(!nick){ el.innerHTML=''; return; }
   nicknameCheckTimer = setTimeout(async ()=>{
-    const {data} = await sb.from('profiles').select('id').eq('nickname', nick).maybeSingle();
-    if(data){
+    const {data: free} = await sb.rpc('nickname_available', {n: nick});
+    if(free === false){
       el.innerHTML = '<span class="badge-unverified" style="color:var(--coral);">'+t('nickname_taken')+'</span>';
     } else {
       el.innerHTML = '<span class="badge-verified">'+t('nickname_free')+'</span>';
@@ -1367,8 +1363,8 @@ async function doRegister(){
     showAuthError('registerError', t('reg_error_fill'));
     return;
   }
-  const {data: existing} = await sb.from('profiles').select('id').eq('nickname', nick).maybeSingle();
-  if(existing){
+  const {data: free} = await sb.rpc('nickname_available', {n: nick});
+  if(free === false){
     showAuthError('registerError', t('reg_error_taken'));
     return;
   }
@@ -1407,7 +1403,7 @@ async function logout(){
   unsubscribeFriendshipsRealtime();
   unsubscribePostsRealtime();
   unsubscribeInboxRealtime();
-  unreadKeys = new Set(); lastReadMap = {}; knownPendingIds = null; hideToast(); reportCounts = {}; myReportedIds = new Set();
+  unreadKeys = new Set(); blockedIds = new Set(); lastReadMap = {}; knownPendingIds = null; hideToast(); reportCounts = {}; myReportedIds = new Set();
   session = null; myProfile = null; myPrivate = null;
   cache = { posts: [], profilesById: {}, participantsByPost: {}, dmThreads: [], friendships: [] };
   chatsSubTab = 'chats';
@@ -1431,13 +1427,15 @@ async function loadMyProfile(){
 /* ================= DATA REFRESH ================= */
 async function refreshData(){
   if(!myProfile) return;
-  const [{data:posts}, {data:profiles}, {data:parts}, {data:dms}, {data:friendships}] = await Promise.all([
+  const [{data:posts}, {data:profiles}, {data:parts}, {data:dms}, {data:friendships}, {data:blks}] = await Promise.all([
     sb.from('posts').select('*').order('created_at', {ascending:false}),
     sb.from('profiles').select('*'),
     sb.from('post_participants').select('post_id,user_id'),
     sb.from('dm_threads').select('*').or(`user_a.eq.${myProfile.id},user_b.eq.${myProfile.id}`),
-    sb.from('friendships').select('*')
+    sb.from('friendships').select('*'),
+    sb.from('blocks').select('blocked_id')
   ]);
+  blockedIds = new Set((blks || []).map(b => b.blocked_id));
   cache.posts = posts || [];
   cache.profilesById = {};
   (profiles||[]).forEach(p=>{ cache.profilesById[p.id] = p; });
@@ -1479,19 +1477,25 @@ function updateChatsDot(){
   if(b) b.style.display = hasReq ? 'block' : 'none';
 }
 /* ---- unread messages + floating toast ---- */
-function lastReadStorageKey(){ return 'enganchat_lastread_' + myProfile.id; }
-function saveLastRead(){ try{ localStorage.setItem(lastReadStorageKey(), JSON.stringify(lastReadMap)); }catch(e){} }
-function loadLastRead(){
-  try{ lastReadMap = JSON.parse(localStorage.getItem(lastReadStorageKey()) || '{}') || {}; }catch(e){ lastReadMap = {}; }
-  if(!lastReadMap.__init){ lastReadMap.__init = Date.now(); saveLastRead(); }
+function saveReadRemote(key, ms){
+  if(!myProfile) return;
+  sb.from('chat_reads').upsert({user_id: myProfile.id, chat_key: key, last_read_at: new Date(ms).toISOString()}).then(function(){}, function(){});
+}
+async function loadLastRead(){
+  lastReadMap = {};
+  const {data, error} = await sb.from('chat_reads').select('chat_key,last_read_at');
+  (data || []).forEach(function(r){ lastReadMap[r.chat_key] = Date.parse(r.last_read_at); });
+  if(!lastReadMap.__init){
+    lastReadMap.__init = Date.now();
+    if(!error) saveReadRemote('__init', lastReadMap.__init);
+  }
 }
 function chatKey(type, id){ return type + ':' + id; }
 function markChatRead(type, id, ts){
   const key = chatKey(type, id);
   const ms = ts ? Date.parse(ts) : Date.now();
-  if(!lastReadMap[key] || lastReadMap[key] < ms) lastReadMap[key] = ms;
+  if(!lastReadMap[key] || lastReadMap[key] < ms){ lastReadMap[key] = ms; saveReadRemote(key, ms); }
   unreadKeys.delete(key);
-  saveLastRead();
   updateChatsDot();
 }
 async function computeUnread(){
@@ -1503,12 +1507,12 @@ async function computeUnread(){
   const init = lastReadMap.__init || 0;
   const found = new Set();
   (pmRes.data || []).forEach(m=>{
-    if(m.is_system || m.sender_id === myProfile.id) return;
+    if(m.is_system || m.sender_id === myProfile.id || blockedIds.has(m.sender_id)) return;
     const key = chatKey('post', m.post_id);
     if(Date.parse(m.created_at) > (lastReadMap[key] || init)) found.add(key);
   });
   (dmRes.data || []).forEach(m=>{
-    if(m.sender_id === myProfile.id) return;
+    if(m.sender_id === myProfile.id || blockedIds.has(m.sender_id)) return;
     const key = chatKey('dm', m.thread_id);
     if(Date.parse(m.created_at) > (lastReadMap[key] || init)) found.add(key);
   });
@@ -1532,7 +1536,7 @@ function isChatScreenOpen(){
   return !!(el && el.classList.contains('open'));
 }
 async function onIncomingMessage(type, m){
-  if(!m || !myProfile || m.is_system || m.sender_id === myProfile.id) return;
+  if(!m || !myProfile || m.is_system || m.sender_id === myProfile.id || blockedIds.has(m.sender_id)) return;
   const id = type === 'post' ? m.post_id : m.thread_id;
   if(isChatScreenOpen() && openChatType === type && openChatId === id){
     markChatRead(type, id, m.created_at);
@@ -1674,7 +1678,7 @@ async function showApp(){
   await refreshData();
   subscribeFriendshipsRealtime();
   subscribePostsRealtime();
-  loadLastRead();
+  await loadLastRead();
   await computeUnread();
   subscribeInboxRealtime();
   loadReportData();
@@ -1731,7 +1735,7 @@ function isJoined(post){
   return !!(myProfile && set && set.has(myProfile.id));
 }
 function getVisiblePosts(){
-  let posts = cache.posts.slice();
+  let posts = cache.posts.filter(p => !blockedIds.has(p.creator_id));
   if(state.tab === 'saved'){
     posts = posts.filter(p => isJoined(p) && !isPastPost(p));
   } else if(state.activeFilter !== 'all' && state.tab==='home'){
@@ -1761,7 +1765,7 @@ function participantIdsOf(post){
 function partRowHtml(uid, badge, isMe){
   const u = cache.profilesById[uid] || {};
   const name = dn(u);
-  const avatarInner = u.photo_url ? ('<img src="' + escapeAttr(u.photo_url) + '" style="width:100%;height:100%;object-fit:cover;">') : escapeHtml(name.charAt(0).toUpperCase());
+  const avatarInner = safeImg(u.photo_url) ? ('<img src="' + escapeAttr(safeImg(u.photo_url)) + '" style="width:100%;height:100%;object-fit:cover;">') : escapeHtml(name.charAt(0).toUpperCase());
   const click = isMe ? '' : (' onclick="openUserCard(\'' + uid + '\')" style="cursor:pointer;"');
   const warn = (!isMe && reportCounts[uid]) ? '<span style="color:var(--coral); margin-left:6px;">&#9888;</span>' : '';
   const you = isMe ? (' <span class="hint">(' + t('part_you') + ')</span>') : '';
@@ -1868,7 +1872,7 @@ function renderFeed(){
         <div class="post-meta">
           <span>&#128205; ${escapeHtml(p.location || 'Por confirmar')}</span>
           <span>&#128197; ${dateFmt}</span>
-          ${p.map_link ? `<a href="${escapeAttr(p.map_link)}" target="_blank" rel="noopener">${t('post_directions')}</a>` : ''}
+          ${safeUrl(p.map_link) ? `<a href="${escapeAttr(safeUrl(p.map_link))}" target="_blank" rel="noopener">${t('post_directions')}</a>` : ''}
           <button type="button" class="linkbtn" onclick="openParticipants('${p.id}')">&#128101; ${t('post_see_people', {n: participantIdsOf(p).length})}</button>
         </div>
         <div class="post-footer">
@@ -1925,7 +1929,18 @@ function escapeHtml(s){
   return d.innerHTML;
 }
 function escapeAttr(s){
-  return String(s==null?'':s).replace(/"/g,'&quot;');
+  return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function safeUrl(u){
+  u = String(u||'').trim();
+  if(!u) return '';
+  if(!/^[a-z][a-z0-9+.-]*:/i.test(u)) u = 'https://' + u;
+  return /^https?:\/\//i.test(u) ? u : '';
+}
+function safeImg(u){
+  if(typeof u !== 'string' || !u) return '';
+  if(/^data:image\/(png|jpe?g|webp|gif);base64,[A-Za-z0-9+\/=]+$/.test(u)) return u;
+  return /^https:\/\//i.test(u) ? u : '';
 }
 
 /* ================= CREATE FLOW ================= */
@@ -1996,11 +2011,11 @@ async function publishPost(){
   const date = document.getElementById('fDate').value;
   const time = document.getElementById('fTime').value;
   const loc = document.getElementById('fLoc').value.trim();
-  const mapLink = document.getElementById('fMapLink').value.trim();
+  const mapLink = safeUrl(document.getElementById('fMapLink').value);
   const spots = parseInt(document.getElementById('fSpots').value, 10) || 1;
 
   if(!title || formCats.length===0){
-    alert(t('create_error_missing'));
+    showToast(t('create_error_missing'), '', null);
     return;
   }
   if(!date){
@@ -2022,7 +2037,8 @@ async function publishPost(){
     const existing = cache.posts.find(p=>p.id===editingPostId);
     const taken = existing ? spotsTakenFor(existing) : 0;
     payload.spots_total = Math.max(spots, taken);
-    await sb.from('posts').update(payload).eq('id', editingPostId).eq('creator_id', myProfile.id);
+    const {error: upErr} = await sb.from('posts').update(payload).eq('id', editingPostId).eq('creator_id', myProfile.id);
+    if(upErr){ showToast(t('publish_error'), '', null); return; }
     editingPostId = null;
     closeScreen('createScreen');
     await refreshData();
@@ -2031,7 +2047,8 @@ async function publishPost(){
 
   payload.spots_total = spots;
   payload.creator_id = myProfile.id;
-  await sb.from('posts').insert(payload);
+  const {error: insErr} = await sb.from('posts').insert(payload);
+  if(insErr){ showToast(t('publish_error'), '', null); return; }
   closeScreen('createScreen');
   state.tab = 'home';
   await refreshData();
@@ -2097,7 +2114,7 @@ async function renderChatThreadsList(){
     return { type:'post', id: p.id, title: p.title,
       avatarHtml: `<div class="chatlist-avatar" style="background:color-mix(in srgb, ${c.color} 20%, transparent); color:${c.color};">${escapeHtml(catLabel(c).charAt(0))}</div>` };
   });
-  const dmItems = cache.dmThreads.map(d=>{
+  const dmItems = cache.dmThreads.filter(d => !blockedIds.has(d.user_a === myProfile.id ? d.user_b : d.user_a)).map(d=>{
     const otherId = d.user_a === myProfile.id ? d.user_b : d.user_a;
     const other = cache.profilesById[otherId];
     const name = other ? dn(other) : '—';
@@ -2142,7 +2159,7 @@ async function renderChatThreadsList(){
 function friendRowHtml(uid, actionsHtml){
   const u = cache.profilesById[uid] || {};
   const name = dn(u);
-  const avatarInner = u.photo_url ? ('<img src="' + escapeAttr(u.photo_url) + '" style="width:100%;height:100%;object-fit:cover;">') : escapeHtml(name.charAt(0).toUpperCase());
+  const avatarInner = safeImg(u.photo_url) ? ('<img src="' + escapeAttr(safeImg(u.photo_url)) + '" style="width:100%;height:100%;object-fit:cover;">') : escapeHtml(name.charAt(0).toUpperCase());
   return `
     <div class="chatlist-row">
       <div class="chatlist-avatar" style="background:var(--surface-2); color:var(--lime); cursor:pointer; overflow:hidden;" onclick="openUserCard('${uid}')">${avatarInner}</div>
@@ -2198,8 +2215,9 @@ async function searchFriends(){
   const q = normalizeNickname(input.value);
   if(q.length < 2){ results.innerHTML = q.length ? `<div class="hint" style="padding:6px 2px;">${t('friend_search_hint')}</div>` : ''; return; }
   const {data} = await sb.from('profiles').select('*').ilike('nickname', `%${q}%`).neq('id', myProfile.id).limit(10);
-  (data||[]).forEach(p=>{ cache.profilesById[p.id] = p; });
-  lastFriendSearchResults = (data||[]).map(p=>p.id);
+  const found = (data||[]).filter(p => !blockedIds.has(p.id));
+  found.forEach(p=>{ cache.profilesById[p.id] = p; });
+  lastFriendSearchResults = found.map(p=>p.id);
   renderFriendSearchResults();
 }
 let lastFriendSearchResults = [];
@@ -2289,7 +2307,7 @@ function renderChatMsgs(){
   if(openChatMessages.length===0){
     wrap.innerHTML = `<div class="empty"><b>${t('chat_empty')}</b>${t('chat_empty_sub')}</div>`;
   } else {
-    wrap.innerHTML = openChatMessages.map(m=>{
+    wrap.innerHTML = openChatMessages.filter(m => m.is_system || !blockedIds.has(m.sender_id)).map(m=>{
       if(m.is_system){
         return `<div style="text-align:center; font-size:11.5px; color:var(--muted); margin:6px 0;">${escapeHtml(m.text)}</div>`;
       }
@@ -2305,11 +2323,10 @@ async function sendChatMsg(){
   const text = input.value.trim();
   if(!text || !openChatId) return;
   input.value = '';
-  if(openChatType === 'post'){
-    await sb.from('post_messages').insert({post_id: openChatId, sender_id: myProfile.id, text});
-  } else {
-    await sb.from('dm_messages').insert({thread_id: openChatId, sender_id: myProfile.id, text});
-  }
+  const res = openChatType === 'post'
+    ? await sb.from('post_messages').insert({post_id: openChatId, sender_id: myProfile.id, text})
+    : await sb.from('dm_messages').insert({thread_id: openChatId, sender_id: myProfile.id, text});
+  if(res.error){ input.value = text; showToast(t('send_error'), '', null); return; }
   await loadChatMessages();
 }
 let ucTargetId = null;
@@ -2322,7 +2339,7 @@ async function openUserCard(uid){
   const originLbl = u.origin === 'intl' ? t('origin_intl') : t('origin_local');
   document.getElementById('ucSub').textContent = u.uni ? (originLbl + ' · ' + u.uni) : originLbl;
   const avatarWrap = document.getElementById('ucAvatar');
-  avatarWrap.innerHTML = u.photo_url ? `<img src="${u.photo_url}">` : `<span>${escapeHtml(dn(u).charAt(0).toUpperCase())}</span>`;
+  avatarWrap.innerHTML = safeImg(u.photo_url) ? `<img src="${escapeAttr(safeImg(u.photo_url))}">` : `<span>${escapeHtml(dn(u).charAt(0).toUpperCase())}</span>`;
   const sportsHtml = (u.sports && u.sports.length)
     ? u.sports.map(function(s){ return '<span class="microchip">' + catLabel(catById(s)) + '</span>'; }).join('')
     : '<span class="microchip">' + t('profile_none') + '</span>';
@@ -2343,11 +2360,38 @@ async function openUserCard(uid){
   const already = myReportedIds.has(uid);
   rb.textContent = already ? t('report_already') : t('report_btn');
   rb.disabled = already;
+  const isBlk = blockedIds.has(uid);
+  document.getElementById('ucBlockBtn').textContent = isBlk ? t('unblock_btn') : t('block_btn');
+  document.getElementById('ucContactBtn').style.display = isBlk ? 'none' : '';
   document.getElementById('userCardOverlay').classList.add('open');
 }
 function closeUserCard(){
   document.getElementById('userCardOverlay').classList.remove('open');
   ucTargetId = null;
+}
+async function toggleBlockFromCard(){
+  if(!ucTargetId || !myProfile) return;
+  const uid = ucTargetId;
+  const nm = dn(cache.profilesById[uid]);
+  closeUserCard();
+  if(blockedIds.has(uid)){
+    const {error} = await sb.from('blocks').delete().eq('blocker_id', myProfile.id).eq('blocked_id', uid);
+    if(error){ showToast(t('block_error'), '', null); return; }
+    blockedIds.delete(uid);
+    showToast(t('unblock_done'), '', null);
+  } else {
+    const ok = await showConfirm(t('block_title', {name: nm}), t('block_msg'), t('block_btn'));
+    if(!ok) return;
+    const {error} = await sb.from('blocks').insert({blocker_id: myProfile.id, blocked_id: uid});
+    if(error && error.code !== '23505'){ showToast(t('block_error'), '', null); return; }
+    const row = friendshipRowWith(uid);
+    if(row) await sb.from('friendships').delete().eq('id', row.id);
+    blockedIds.add(uid);
+    closeParticipants();
+    showToast(t('block_done'), '', null);
+  }
+  await refreshFriendships();
+  renderFeed();
 }
 async function contactFromCard(){
   if(!ucTargetId) return;
@@ -2411,6 +2455,7 @@ async function submitReport(){
 }
 async function openDmWith(targetId){
   if(!myProfile || targetId === myProfile.id) return;
+  if(blockedIds.has(targetId)){ showToast(t('block_cannot_dm'), '', null); return; }
   const [a,b] = [myProfile.id, targetId].sort();
   let thread = cache.dmThreads.find(d => d.user_a===a && d.user_b===b);
   if(!thread){
@@ -2462,14 +2507,14 @@ function renderProfile(){
         <label>${t('reg_photo_label')}</label>
         <div style="display:flex; align-items:center; gap:14px;">
           <div class="profile-avatar" style="width:56px;height:56px;margin:0;">
-            <span id="editPhotoLetter" style="${p.photo_url?'display:none;':''}">${(p.name||'?').charAt(0).toUpperCase()}</span>
-            <img id="editPhotoImg" style="${p.photo_url?'':'display:none;'}" src="${p.photo_url||''}">
+            <span id="editPhotoLetter" style="${safeImg(p.photo_url)?'display:none;':''}">${escapeHtml(dn(p).charAt(0).toUpperCase())}</span>
+            <img id="editPhotoImg" style="${safeImg(p.photo_url)?'':'display:none;'}" src="${escapeAttr(safeImg(p.photo_url))}">
           </div>
           <button type="button" class="segbtn" style="flex:0 0 auto; padding:10px 16px;" onclick="document.getElementById('editPhotoFile').click()">${t('profile_change_photo')}</button>
           <input type="file" id="editPhotoFile" accept="image/*" style="display:none;" onchange="handlePhotoInput(this,'edit')">
         </div>
       </div>
-      <div class="field"><label>${t('reg_name_label')}</label><input type="text" id="editName" value="${escapeAttr(p.name)}"></div>
+      <div class="field"><label>${t('reg_name_label')}</label><input type="text" id="editName" maxlength="40" value="${escapeAttr(p.name)}"></div>
       <div class="field">
         <label>${t('reg_origin_label')}</label>
         <div class="segrow">
@@ -2497,9 +2542,10 @@ function renderProfile(){
   body.innerHTML = `
     <div class="profile-hero">
       <div class="profile-avatar">
-        ${p.photo_url ? `<img src="${p.photo_url}">` : (p.name||'?').charAt(0).toUpperCase()}
+        ${safeImg(p.photo_url) ? `<img src="${escapeAttr(safeImg(p.photo_url))}">` : escapeHtml(dn(p).charAt(0).toUpperCase())}
       </div>
       <div class="profile-name">${escapeHtml(p.name)}</div>
+      <div class="profile-sub">@${escapeHtml(p.nickname || '')}</div>
       <div class="profile-sub">${p.origin==='local' ? t('origin_local') : t('origin_intl')} &middot; ${escapeHtml(p.uni || '—')}</div>
       ${verified ? `<span class="badge-verified">${t('badge_verified')}</span>` : `<span class="badge-unverified">${t('badge_unverified')}</span><button class="secondary-btn" style="margin-top:10px;" onclick="openVerify()">${t('ver_btn')}</button>`}
     </div>
@@ -2526,7 +2572,7 @@ function renderProfile(){
     </div>
     <button class="secondary-btn" onclick="logout()">${t('profile_logout')}</button>
   `;
-  document.getElementById('headerAvatar').innerHTML = p.photo_url ? `<img src="${p.photo_url}">` : (p.name||'?').charAt(0).toUpperCase();
+  document.getElementById('headerAvatar').innerHTML = safeImg(p.photo_url) ? `<img src="${escapeAttr(safeImg(p.photo_url))}">` : escapeHtml(dn(p).charAt(0).toUpperCase());
 }
 function renderEditSportsPicker(){
   const wrap = document.getElementById('editSportsPicker');
