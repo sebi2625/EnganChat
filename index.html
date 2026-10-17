@@ -804,7 +804,7 @@ const TRANSLATIONS = {
     post_directions:'Cómo llegar &rarr;', post_full:'Completo', post_spots:'plazas',
     post_join:'Apuntarme', post_joined:'Apuntado ✓',
     post_looking_suffix:'buscando equipo', post_contact:'Contactar', post_contacted:'Contactado ✓',
-    sys_label:'Sistema', sys_joined:'{name} se ha apuntado al plan.', sys_contacted:'{name} ha contactado sobre este plan.',
+    sys_label:'Sistema', sys_joined:'{name} se ha apuntado al plan.', sys_left:'{name} ha abandonado el plan.', sys_contacted:'{name} ha contactado sobre este plan.',
     urg_today:'Hoy', urg_tomorrow:'Mañana', urg_indays:'En {n} días', urg_past:'Ya pasó',
     post_edit:'Editar', post_delete:'Borrar',
     delete_confirm_title:'Borrar publicación', delete_confirm_msg:'Se eliminará para todos y no se puede deshacer.', delete_confirm_btn:'Borrar',
@@ -915,7 +915,7 @@ const TRANSLATIONS = {
     post_directions:'Com arribar-hi &rarr;', post_full:'Complet', post_spots:'places',
     post_join:'Apuntar-me', post_joined:'Apuntat ✓',
     post_looking_suffix:'buscant equip', post_contact:'Contactar', post_contacted:'Contactat ✓',
-    sys_label:'Sistema', sys_joined:'{name} s\'ha apuntat al pla.', sys_contacted:'{name} ha contactat sobre aquest pla.',
+    sys_label:'Sistema', sys_joined:'{name} s\'ha apuntat al pla.', sys_left:'{name} ha abandonat el pla.', sys_contacted:'{name} ha contactat sobre aquest pla.',
     urg_today:'Avui', urg_tomorrow:'Demà', urg_indays:'En {n} dies', urg_past:'Ja ha passat',
     post_edit:'Editar', post_delete:'Esborrar',
     delete_confirm_title:'Esborrar publicació', delete_confirm_msg:'S\'eliminarà per a tothom i no es pot desfer.', delete_confirm_btn:'Esborrar',
@@ -1026,7 +1026,7 @@ const TRANSLATIONS = {
     post_directions:'Directions &rarr;', post_full:'Full', post_spots:'spots',
     post_join:'Join', post_joined:'Joined ✓',
     post_looking_suffix:'looking for a team', post_contact:'Contact', post_contacted:'Contacted ✓',
-    sys_label:'System', sys_joined:'{name} joined the plan.', sys_contacted:'{name} reached out about this plan.',
+    sys_label:'System', sys_joined:'{name} joined the plan.', sys_left:'{name} left the plan.', sys_contacted:'{name} reached out about this plan.',
     urg_today:'Today', urg_tomorrow:'Tomorrow', urg_indays:'In {n} days', urg_past:'Already happened',
     post_edit:'Edit', post_delete:'Delete',
     delete_confirm_title:'Delete post', delete_confirm_msg:'This will be removed for everyone and can\'t be undone.', delete_confirm_btn:'Delete',
@@ -1822,6 +1822,7 @@ async function toggleJoin(id){
   const isLooking = post.mode === 'looking';
   const already = isJoined(post);
   if(already){
+    await sb.from('post_messages').insert({post_id: id, sender_id: myProfile.id, is_system:true, text: t('sys_left', {name: dn(myProfile)})});
     await sb.from('post_participants').delete().eq('post_id', id).eq('user_id', myProfile.id);
   } else {
     if(!isLooking && spotsTakenFor(post) >= post.spots_total) return;
