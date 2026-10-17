@@ -655,6 +655,9 @@ let myPrivate = null;
 let cache = { posts: [], profilesById: {}, participantsByPost: {}, dmThreads: [], friendships: [] };
 let chatsSubTab = 'chats'; // 'chats' | 'friends'
 let friendshipsChannel = null;
+let postsChannel = null;
+let partsRefreshTimer = null;
+let partOpenPostId = null;
 let unreadKeys = new Set();
 let lastReadMap = {};
 let inboxChannel = null;
@@ -1316,6 +1319,7 @@ async function logout(){
   if(!ok) return;
   await sb.auth.signOut();
   unsubscribeFriendshipsRealtime();
+  unsubscribePostsRealtime();
   unsubscribeInboxRealtime();
   unreadKeys = new Set(); lastReadMap = {}; knownPendingIds = null; hideToast(); reportCounts = {}; myReportedIds = new Set();
   session = null; myProfile = null; myPrivate = null;
@@ -1501,6 +1505,26 @@ function subscribeFriendshipsRealtime(){
     .on('postgres_changes', { event: '*', schema: 'public', table: 'friendships', filter: `addressee_id=eq.${myProfile.id}` }, refreshFriendships)
     .subscribe();
 }
+function subscribePostsRealtime(){
+  unsubscribePostsRealtime();
+  if(!myProfile) return;
+  postsChannel = sb
+    .channel('posts-live-' + myProfile.id)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'post_participants' }, schedulePartsRefresh)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, schedulePartsRefresh)
+    .subscribe();
+}
+function unsubscribePostsRealtime(){
+  if(postsChannel){ sb.removeChannel(postsChannel); postsChannel = null; }
+  clearTimeout(partsRefreshTimer);
+}
+function schedulePartsRefresh(){
+  clearTimeout(partsRefreshTimer);
+  partsRefreshTimer = setTimeout(async function(){
+    await refreshData();
+    await refreshParticipantsOverlay();
+  }, 400);
+}
 function unsubscribeFriendshipsRealtime(){
   if(friendshipsChannel){ sb.removeChannel(friendshipsChannel); friendshipsChannel = null; }
 }
@@ -1563,6 +1587,7 @@ async function showApp(){
   renderChips();
   await refreshData();
   subscribeFriendshipsRealtime();
+  subscribePostsRealtime();
   loadLastRead();
   await computeUnread();
   subscribeInboxRealtime();
@@ -1659,9 +1684,14 @@ function partRowHtml(uid, badge, isMe){
     '<div class="chatlist-main"><div class="chatlist-title">' + escapeHtml(name) + you + warn + '</div></div>' +
     '<div style="flex:0 0 auto;">' + badge + '</div></div>';
 }
+async function refreshParticipantsOverlay(){
+  if(!partOpenPostId || !document.getElementById('participantsOverlay').classList.contains('open')) return;
+  await openParticipants(partOpenPostId);
+}
 async function openParticipants(postId){
   const post = cache.posts.find(p => p.id === postId);
-  if(!post) return;
+  if(!post){ closeParticipants(); return; }
+  partOpenPostId = postId;
   const ids = participantIdsOf(post);
   await Promise.all([ensureProfilesCached(ids), loadReportData()]);
   document.getElementById('partTitle').textContent = post.title;
@@ -1672,6 +1702,7 @@ async function openParticipants(postId){
   document.getElementById('participantsOverlay').classList.add('open');
 }
 function closeParticipants(){
+  partOpenPostId = null;
   document.getElementById('participantsOverlay').classList.remove('open');
 }
 function getParticipants(post){
@@ -1799,6 +1830,7 @@ async function toggleJoin(id){
     await sb.from('post_messages').insert({post_id: id, sender_id: myProfile.id, is_system:true, text: sysText});
   }
   await refreshData();
+  await refreshParticipantsOverlay();
 }
 function escapeHtml(s){
   const d = document.createElement('div');
