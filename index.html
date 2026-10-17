@@ -284,11 +284,11 @@
   #installbar .txt{flex:1;}
 
   /* modal */
-  #modalOverlay, #userCardOverlay, #reportOverlay{
+  #modalOverlay, #userCardOverlay, #reportOverlay, #feedbackOverlay{
     position:fixed; inset:0; z-index:200; background:rgba(6,11,18,0.66);
     display:none; align-items:flex-end; justify-content:center;
   }
-  #modalOverlay.open, #userCardOverlay.open, #reportOverlay.open{display:flex;}
+  #modalOverlay.open, #userCardOverlay.open, #reportOverlay.open, #feedbackOverlay.open{display:flex;}
   .modalbox{
     width:100%; max-width:460px; background:var(--surface);
     border-top-left-radius:20px; border-top-right-radius:20px;
@@ -603,6 +603,18 @@
   </div>
 </div>
 
+<!-- FEEDBACK -->
+<div id="feedbackOverlay">
+  <div class="modalbox">
+    <h3 data-i18n="feedback_label">¿Ideas o sugerencias?</h3>
+    <div class="field" style="margin-top:12px;">
+      <textarea id="feedbackText" maxlength="1000" data-i18n-ph="feedback_ph" placeholder="Cuéntanos qué mejorarías o qué falla..." oninput="document.getElementById('feedbackSendBtn').disabled = !this.value.trim()"></textarea>
+    </div>
+    <button class="primary-btn" id="feedbackSendBtn" onclick="submitFeedback()" disabled data-i18n="feedback_send_btn">Enviar</button>
+    <button class="secondary-btn" onclick="closeFeedback()" data-i18n="modal_cancel_default">Cancelar</button>
+  </div>
+</div>
+
 <!-- REPORT USER -->
 <div id="reportOverlay">
   <div class="modalbox">
@@ -663,11 +675,27 @@ const CATEGORIES = [
 const catLabel = c => t(c.tkey);
 const catById = id => CATEGORIES.find(c=>c.id===id) || CATEGORIES[0];
 const MAX_CATS = 3;
-const FEEDBACK_EMAIL = 'sebastiasv1@gmail.com';
-function feedbackMailtoLink(){
-  const subject = encodeURIComponent(t('feedback_subject'));
-  const body = encodeURIComponent(t('feedback_body') + '\n\n');
-  return `mailto:${FEEDBACK_EMAIL}?subject=${subject}&body=${body}`;
+function openFeedback(){
+  document.getElementById('feedbackText').value = '';
+  document.getElementById('feedbackSendBtn').disabled = true;
+  document.getElementById('feedbackOverlay').classList.add('open');
+}
+function closeFeedback(){
+  document.getElementById('feedbackOverlay').classList.remove('open');
+}
+async function submitFeedback(){
+  const text = document.getElementById('feedbackText').value.trim().slice(0, 1000);
+  if(!text || !myProfile) return;
+  const btn = document.getElementById('feedbackSendBtn');
+  btn.disabled = true;
+  const {error} = await sb.from('feedback').insert({user_id: myProfile.id, message: text});
+  if(error){
+    btn.disabled = false;
+    showToast(t('feedback_error'), '', null);
+    return;
+  }
+  closeFeedback();
+  showToast(t('feedback_thanks'), t('feedback_thanks_sub'), null);
 }
 
 const VERIFIED_DOMAIN_HINTS = ['.edu', '.ac.', 'upc.edu', 'estudiantat.upc.edu', 'ub.edu', 'alumnes.ub.edu', 'uab.cat', 'uab.es', 'uoc.edu', 'url.edu', 'uic.es', 'esade.edu', 'ie.edu', 'uned.es', 'urv.cat', 'udg.edu', 'udl.cat', 'uvic.cat'];
@@ -786,6 +814,8 @@ const TRANSLATIONS = {
     report_thanks:'Reporte enviado', report_thanks_sub:'Gracias, lo revisaremos.',
     report_already:'Reportado ✓', report_error:'No se ha podido enviar el reporte',
     report_warning:'⚠ Acumula {n} reportes de otros usuarios',
+    feedback_ph:'Cuéntanos qué mejorarías o qué falla...', feedback_send_btn:'Enviar',
+    feedback_thanks:'¡Gracias!', feedback_thanks_sub:'Hemos recibido tu mensaje.', feedback_error:'No se ha podido enviar',
   },
   ca: {
     cat_futbol:'Futbol', cat_basquet:'Bàsquet', cat_voley:'Vòlei', cat_running:'Running', cat_padel:'Pàdel',
@@ -893,6 +923,8 @@ const TRANSLATIONS = {
     report_thanks:'Report enviat', report_thanks_sub:'Gràcies, el revisarem.',
     report_already:'Reportat ✓', report_error:'No s\'ha pogut enviar el report',
     report_warning:'⚠ Acumula {n} reports d\'altres usuaris',
+    feedback_ph:'Explica\'ns què milloraries o què falla...', feedback_send_btn:'Enviar',
+    feedback_thanks:'Gràcies!', feedback_thanks_sub:'Hem rebut el teu missatge.', feedback_error:'No s\'ha pogut enviar',
   },
   en: {
     cat_futbol:'Football', cat_basquet:'Basketball', cat_voley:'Volleyball', cat_running:'Running', cat_padel:'Padel',
@@ -1000,6 +1032,8 @@ const TRANSLATIONS = {
     report_thanks:'Report sent', report_thanks_sub:'Thanks, we\'ll review it.',
     report_already:'Reported ✓', report_error:'Couldn\'t send the report',
     report_warning:'⚠ Has {n} reports from other users',
+    feedback_ph:'Tell us what you\'d improve or what\'s broken...', feedback_send_btn:'Send',
+    feedback_thanks:'Thank you!', feedback_thanks_sub:'We\'ve received your message.', feedback_error:'Couldn\'t send it',
   }
 };
 function t(key, vars){
@@ -2293,7 +2327,7 @@ function renderProfile(){
     </div>
     <div class="field">
       <label>${t('feedback_label')}</label>
-      <a class="secondary-btn" style="display:block; text-align:center; text-decoration:none; margin-top:0;" href="${feedbackMailtoLink()}">${t('feedback_btn')}</a>
+      <button class="secondary-btn" style="margin-top:0;" onclick="openFeedback()">${t('feedback_btn')}</button>
     </div>
     <button class="secondary-btn" onclick="logout()">${t('profile_logout')}</button>
   `;
