@@ -2160,25 +2160,7 @@ async function loadSearchDefault(){
   const seq = ++searchSeq;
   const rec = loadRecent().filter(id => !cache.profilesById[id]);
   if(rec.length) await fetchProfilesByIds(rec);
-  const mine = myProfile.sports || [];
-  let rows = [];
-  if(mine.length){
-    const {data} = await sb.from('profiles').select('*').neq('id', myProfile.id).overlaps('sports', mine).limit(60);
-    rows = data || [];
-  }
-  const keep = pr => !blockedIds.has(pr.id) && friendStatusWith(pr.id).status !== 'accepted';
-  const common = pr => (pr.sports || []).filter(x => mine.indexOf(x) >= 0).length;
-  rows = rows.filter(keep).sort((a, b) => (common(b) - common(a)) || (String(b.created_at).localeCompare(String(a.created_at))));
-  if(rows.length < 10){
-    const {data} = await sb.from('profiles').select('*').neq('id', myProfile.id).order('created_at', {ascending:false}).limit(30);
-    (data || []).filter(keep).forEach(pr => { if(!rows.some(x => x.id === pr.id)) rows.push(pr); });
-  }
   if(seq !== searchSeq) return;
-  rows = rows.slice(0, 20);
-  rows.forEach(pr => { cache.profilesById[pr.id] = pr; });
-  suggestIds = rows.map(pr => pr.id);
-  suggestLoaded = true;
-  searchIds = [];
   renderSearchResults();
 }
 async function searchUsers(){
@@ -2224,9 +2206,6 @@ function renderSearchResults(){
   const rec = loadRecent().filter(id => cache.profilesById[id] && !blockedIds.has(id));
   let html = '';
   if(rec.length) html += head(t('search_recent')) + rec.map(id => searchRowHtml(id, true)).join('');
-  const sug = suggestIds.filter(id => cache.profilesById[id] && !blockedIds.has(id) && friendStatusWith(id).status !== 'accepted');
-  if(sug.length) html += head(t('search_suggested')) + sug.map(id => searchRowHtml(id, false)).join('');
-  if(!html) html = suggestLoaded ? '<div class="empty"><b>' + t('search_none') + '</b></div>' : '';
   el.innerHTML = html;
 }
 
