@@ -7,6 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0F1B2B">
+<script>try{var __th=localStorage.getItem('enganchat_theme');if(__th){document.documentElement.setAttribute('data-theme',__th);}}catch(e){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
 <link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@500;600;700;800&amp;family=Work+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
@@ -20,15 +21,31 @@
     --coral:#FF6B4A;
     --text:#F4F6F1;
     --muted:#8CA0B3;
+    --on-accent:#0F1B2B; --bar:rgba(15,27,43,0.92); --nav:rgba(22,36,58,0.96); --overlay:rgba(6,11,18,0.66); --ph:#5C7288; --tint:rgba(198,241,53,0.12); --shadow-accent:rgba(198,241,53,0.35);
+    --c-teal:#8FD3C7; --c-violet:#9B8CFF; --c-sky:#5FB3E8; --c-gold:#FFD166;
     --radius:14px;
     --safe-top: env(safe-area-inset-top, 0px);
     --safe-bottom: env(safe-area-inset-bottom, 0px);
   }
-  :root:not([data-theme="light"]){ color-scheme: dark; }
-  @media (prefers-color-scheme: light){
-    :root:not([data-theme="dark"]){
-      --bg:#0F1B2B; --surface:#16243A; --surface-2:#1D2E47; --line:#26374F; --text:#F4F6F1; --muted:#8CA0B3;
-    }
+  :root{ color-scheme: dark; }
+  :root[data-theme="navy"], :root[data-theme="green"], :root[data-theme="orange"]{
+    color-scheme: light;
+    --surface:#FFFFFF; --on-accent:#FFFFFF; --bar:rgba(255,255,255,0.92); --nav:rgba(255,255,255,0.96); --overlay:rgba(15,27,43,0.45); --ph:#9AA8BA;
+  }
+  :root[data-theme="navy"]{
+    --bg:#F3F6FB; --surface-2:#E9EEF7; --line:#D5DDEB; --lime:#1E3A8A; --coral:#D9482C; --text:#0F1B2B; --muted:#5B6B82;
+    --tint:rgba(30,58,138,0.10); --shadow-accent:rgba(30,58,138,0.30);
+    --c-teal:#0F8F7D; --c-violet:#6A4FE0; --c-sky:#1B7BC4; --c-gold:#B7791F;
+  }
+  :root[data-theme="green"]{
+    --bg:#F3F8F4; --surface-2:#E7F1E9; --line:#D2E2D5; --lime:#15803D; --coral:#D9482C; --text:#10241A; --muted:#5A6F60;
+    --tint:rgba(21,128,61,0.10); --shadow-accent:rgba(21,128,61,0.30);
+    --c-teal:#0F8F7D; --c-violet:#6A4FE0; --c-sky:#1B7BC4; --c-gold:#B7791F;
+  }
+  :root[data-theme="orange"]{
+    --bg:#FBF6F2; --surface-2:#F4EAE1; --line:#E6D8CB; --lime:#E8590C; --coral:#C92A2A; --text:#2A1A12; --muted:#7A6556;
+    --tint:rgba(232,89,12,0.10); --shadow-accent:rgba(232,89,12,0.30);
+    --c-teal:#0F8F7D; --c-violet:#6A4FE0; --c-sky:#1B7BC4; --c-gold:#B7791F;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{margin:0;padding:0;}
@@ -62,7 +79,7 @@
 
   header.top{
     position:sticky; top:0; z-index:30;
-    background:rgba(15,27,43,0.92);
+    background:var(--bar);
     backdrop-filter:blur(10px);
     padding:calc(14px + var(--safe-top)) 18px 12px;
     border-bottom:1px solid var(--line);
@@ -97,7 +114,7 @@
     white-space:nowrap;
   }
   .chip.active{
-    background:var(--lime); color:#0F1B2B; border-color:var(--lime);
+    background:var(--lime); color:var(--on-accent); border-color:var(--lime);
   }
 
   main{flex:1; padding:14px 18px 100px;}
@@ -141,7 +158,7 @@
     font-size:12.5px; font-weight:700; padding:6px 14px; border-radius:100px;
     background:var(--surface-2); color:var(--text); border:1px solid var(--line);
   }
-  .joinbtn.joined{background:var(--lime); color:#0F1B2B; border-color:var(--lime);}
+  .joinbtn.joined{background:var(--lime); color:var(--on-accent); border-color:var(--lime);}
   .spots{font-size:12px; font-weight:700; color:var(--lime);}
   .spots.full{color:var(--muted);}
   .owner-actions{display:flex; gap:6px; flex:0 0 auto;}
@@ -154,7 +171,7 @@
   nav.bottom{
     position:fixed; bottom:0; left:50%; transform:translateX(-50%);
     width:100%; max-width:460px;
-    background:rgba(22,36,58,0.96);
+    background:var(--nav);
     backdrop-filter:blur(12px);
     border-top:1px solid var(--line);
     display:flex; align-items:center; justify-content:space-around;
@@ -170,9 +187,9 @@
   .navbtn.active{color:var(--lime);}
   .navbtn.fab{
     width:52px; height:52px; border-radius:50%;
-    background:var(--lime); color:#0F1B2B;
+    background:var(--lime); color:var(--on-accent);
     display:flex; align-items:center; justify-content:center;
-    margin-top:-22px; box-shadow:0 6px 18px rgba(198,241,53,0.35);
+    margin-top:-22px; box-shadow:0 6px 18px var(--shadow-accent);
   }
   .navbtn.fab svg{width:24px;height:24px;}
   .navdot{position:absolute; top:-2px; right:14px; width:7px; height:7px; border-radius:50%; background:var(--coral);}
@@ -204,24 +221,24 @@
     width:100%; background:var(--surface); border:1px solid var(--line); color:var(--text);
     padding:12px 13px; border-radius:10px; font-size:14.5px; font-family:inherit;
   }
-  .field input::placeholder, .field textarea::placeholder{color:#5C7288;}
+  .field input::placeholder, .field textarea::placeholder{color:var(--ph);}
   .field textarea{resize:vertical; min-height:72px;}
   .segrow{display:flex; gap:8px;}
   .segbtn{
     flex:1; padding:11px 8px; border-radius:10px; border:1px solid var(--line);
     background:var(--surface); color:var(--muted); font-size:13px; font-weight:700; text-align:center;
   }
-  .segbtn.active{background:var(--lime); color:#0F1B2B; border-color:var(--lime);}
+  .segbtn.active{background:var(--lime); color:var(--on-accent); border-color:var(--lime);}
   .tagpicker{display:flex; gap:8px; flex-wrap:wrap;}
   .tagopt{
     padding:8px 14px; border-radius:100px; border:1px solid var(--line);
     background:var(--surface); color:var(--text); font-size:13px; font-weight:600;
   }
-  .tagopt.active{color:#0F1B2B; border-color:transparent;}
+  .tagopt.active{color:var(--on-accent); border-color:transparent;}
   .tagopt.disabled{opacity:0.35;}
   .primary-btn{
     width:100%; padding:14px; border-radius:12px; border:none;
-    background:var(--lime); color:#0F1B2B; font-weight:700; font-size:15px;
+    background:var(--lime); color:var(--on-accent); font-weight:700; font-size:15px;
     font-family:'League Spartan';
   }
   .secondary-btn{
@@ -233,7 +250,7 @@
   .hint{font-size:12px; color:var(--muted); margin-top:6px; line-height:1.4;}
   .badge-verified{
     display:inline-flex; align-items:center; gap:5px; font-size:11.5px; font-weight:700;
-    color:var(--lime); background:rgba(198,241,53,0.12); padding:4px 10px; border-radius:100px; margin-top:6px;
+    color:var(--lime); background:var(--tint); padding:4px 10px; border-radius:100px; margin-top:6px;
   }
   .vmark{color:var(--lime); font-weight:800; margin-left:4px;}
   .vmsg{font-size:12.5px; margin:8px 0 0; min-height:16px; color:var(--coral);}
@@ -263,7 +280,7 @@
   .profile-avatar img{width:100%; height:100%; object-fit:cover;}
   .avatar-edit-btn{
     position:absolute; bottom:-2px; right:calc(50% - 43px);
-    width:26px; height:26px; border-radius:50%; background:var(--lime); color:#0F1B2B;
+    width:26px; height:26px; border-radius:50%; background:var(--lime); color:var(--on-accent);
     border:2px solid var(--bg); display:flex; align-items:center; justify-content:center;
   }
   .profile-name{font-family:'League Spartan'; font-size:20px; font-weight:700;}
@@ -287,7 +304,7 @@
 
   /* modal */
   #modalOverlay, #userCardOverlay, #reportOverlay, #feedbackOverlay, #appealOverlay, #resetOverlay, #blockedOverlay, #participantsOverlay, #verifyOverlay{
-    position:fixed; inset:0; z-index:200; background:rgba(6,11,18,0.66);
+    position:fixed; inset:0; z-index:200; background:var(--overlay);
     display:none; align-items:flex-end; justify-content:center;
   }
   #modalOverlay.open, #userCardOverlay.open, #reportOverlay.open, #feedbackOverlay.open, #appealOverlay.open, #resetOverlay.open, #blockedOverlay.open, #participantsOverlay.open, #verifyOverlay.open{display:flex;}
@@ -302,7 +319,7 @@
   .modal-btns{display:flex; gap:10px; margin-top:6px;}
   .modal-btns button{flex:1; padding:12px; border-radius:10px; font-weight:700; font-size:14px; border:1px solid var(--line);}
   .modal-btns .cancel{background:var(--surface-2); color:var(--text);}
-  .modal-btns .confirm{background:var(--lime); color:#0F1B2B; border-color:var(--lime);}
+  .modal-btns .confirm{background:var(--lime); color:var(--on-accent); border-color:var(--lime);}
 
   /* chat */
   .chatlist-row{
@@ -319,7 +336,7 @@
   .chatmsgs{flex:1; overflow-y:auto; padding:16px 16px 10px; display:flex; flex-direction:column; gap:10px;}
   .msg{max-width:78%; padding:9px 13px; border-radius:14px; font-size:13.5px; line-height:1.4;}
   .msg.other{background:var(--surface-2); align-self:flex-start; border-bottom-left-radius:4px;}
-  .msg.self{background:var(--lime); color:#0F1B2B; align-self:flex-end; border-bottom-right-radius:4px;}
+  .msg.self{background:var(--lime); color:var(--on-accent); align-self:flex-end; border-bottom-right-radius:4px;}
   .msg .who{font-size:10.5px; font-weight:700; opacity:0.65; margin-bottom:3px;}
   .chat-inputrow{
     display:flex; gap:8px; padding:12px 16px calc(14px + var(--safe-bottom));
@@ -331,7 +348,7 @@
   }
   .chat-sendbtn{
     width:42px; height:42px; border-radius:50%; background:var(--lime); border:none;
-    display:flex; align-items:center; justify-content:center; color:#0F1B2B; flex:0 0 auto;
+    display:flex; align-items:center; justify-content:center; color:var(--on-accent); flex:0 0 auto;
   }
 
   ::-webkit-scrollbar{width:0;height:0;}
@@ -746,22 +763,22 @@ let myAppealPending = false;
 
 /* ================= DATA (categories / i18n helpers, unchanged) ================= */
 const CATEGORIES = [
-  {id:'futbol', tkey:'cat_futbol', group:'sport', color:'#C6F135'},
-  {id:'basquet', tkey:'cat_basquet', group:'sport', color:'#C6F135'},
-  {id:'voley', tkey:'cat_voley', group:'sport', color:'#C6F135'},
-  {id:'running', tkey:'cat_running', group:'sport', color:'#C6F135'},
-  {id:'padel', tkey:'cat_padel', group:'sport', color:'#C6F135'},
-  {id:'excursion', tkey:'cat_excursion', group:'sport', color:'#8FD3C7'},
-  {id:'tenis', tkey:'cat_tenis', group:'sport', color:'#C6F135'},
-  {id:'gym', tkey:'cat_gym', group:'sport', color:'#C6F135'},
-  {id:'ciclismo', tkey:'cat_ciclismo', group:'sport', color:'#C6F135'},
-  {id:'otro_deporte', tkey:'cat_otro', group:'sport', color:'#C6F135'},
-  {id:'ocio', tkey:'cat_ocio', group:'social', color:'#FF6B4A'},
-  {id:'nightclub', tkey:'cat_nightclub', group:'social', color:'#FF6B4A'},
-  {id:'cena', tkey:'cat_cena', group:'social', color:'#FF6B4A'},
-  {id:'cultura', tkey:'cat_cultura', group:'social', color:'#9B8CFF'},
-  {id:'viajes', tkey:'cat_viajes', group:'social', color:'#5FB3E8'},
-  {id:'idiomas', tkey:'cat_idiomas', group:'social', color:'#FFD166'},
+  {id:'futbol', tkey:'cat_futbol', group:'sport', color:'var(--lime)'},
+  {id:'basquet', tkey:'cat_basquet', group:'sport', color:'var(--lime)'},
+  {id:'voley', tkey:'cat_voley', group:'sport', color:'var(--lime)'},
+  {id:'running', tkey:'cat_running', group:'sport', color:'var(--lime)'},
+  {id:'padel', tkey:'cat_padel', group:'sport', color:'var(--lime)'},
+  {id:'excursion', tkey:'cat_excursion', group:'sport', color:'var(--c-teal)'},
+  {id:'tenis', tkey:'cat_tenis', group:'sport', color:'var(--lime)'},
+  {id:'gym', tkey:'cat_gym', group:'sport', color:'var(--lime)'},
+  {id:'ciclismo', tkey:'cat_ciclismo', group:'sport', color:'var(--lime)'},
+  {id:'otro_deporte', tkey:'cat_otro', group:'sport', color:'var(--lime)'},
+  {id:'ocio', tkey:'cat_ocio', group:'social', color:'var(--coral)'},
+  {id:'nightclub', tkey:'cat_nightclub', group:'social', color:'var(--coral)'},
+  {id:'cena', tkey:'cat_cena', group:'social', color:'var(--coral)'},
+  {id:'cultura', tkey:'cat_cultura', group:'social', color:'var(--c-violet)'},
+  {id:'viajes', tkey:'cat_viajes', group:'social', color:'var(--c-sky)'},
+  {id:'idiomas', tkey:'cat_idiomas', group:'social', color:'var(--c-gold)'},
 ];
 const catLabel = c => t(c.tkey);
 const catById = id => CATEGORIES.find(c=>c.id===id) || CATEGORIES[0];
@@ -1049,7 +1066,7 @@ const TRANSLATIONS = {
     report_already:'Reportado ✓', report_error:'No se ha podido enviar el reporte',
     report_warning:'⚠ Acumula {n} reportes de otros usuarios',
     feedback_ph:'Cuéntanos qué mejorarías o qué falla...', feedback_send_btn:'Enviar',
-    feedback_thanks:'¡Gracias!', feedback_thanks_sub:'Hemos recibido tu mensaje.', filter_btn:'Filtro', nav_search:'Buscar', search_ph:'Busca por nickname', search_recent:'Recientes', search_suggested:'Sugerencias para ti', search_none:'No hemos encontrado a nadie', blocked_chat_note:'Has bloqueado a este usuario. Desbloquéalo para volver a escribirle.', forgot_link:'¿Has olvidado tu contraseña?', reset_title:'Recuperar contraseña', reset_hint:'Te enviaremos un código al correo universitario que verificaste. Solo funciona si tu cuenta está verificada.', reset_send:'Enviar código', reset_sent:'Código enviado a tu correo universitario.', reset_newpass_ph:'Nueva contraseña (mín. 6 caracteres)', reset_confirm:'Cambiar contraseña', reset_ok:'Contraseña cambiada. Ya puedes entrar.', reset_err_not_verified:'Esta cuenta no tiene un correo universitario verificado, así que no se puede recuperar por aquí.', reset_err_weak_password:'La contraseña debe tener al menos 6 caracteres.', reset_err_bad_nickname:'Escribe tu nickname.', blocked_list_title:'Usuarios bloqueados', unblock_short:'Desbloquear', appeal_notice:'⚠ Tu perfil acumula {n} reportes de otros usuarios y los demás ven un aviso. Si crees que son falsos, puedes apelar.', appeal_btn:'Apelar los reportes', appeal_title:'Apelar los reportes', appeal_desc:'Revisaremos tu caso. Cuéntanos por qué crees que los reportes no son justos.', appeal_ph:'Explica por qué crees que los reportes no son justos...', appeal_send:'Enviar apelación', appeal_pending:'Apelación enviada. La revisaremos pronto.', appeal_thanks:'Apelación enviada', appeal_thanks_sub:'La revisaremos pronto.', appeal_error:'No se ha podido enviar la apelación', feedback_error:'No se ha podido enviar',
+    feedback_thanks:'¡Gracias!', feedback_thanks_sub:'Hemos recibido tu mensaje.', theme_label:'Estilo de la app', theme_night:'Noche', theme_navy:'Blanco y azul', theme_green:'Blanco y verde', theme_orange:'Blanco y naranja', filter_btn:'Filtro', nav_search:'Buscar', search_ph:'Busca por nickname', search_recent:'Recientes', search_suggested:'Sugerencias para ti', search_none:'No hemos encontrado a nadie', blocked_chat_note:'Has bloqueado a este usuario. Desbloquéalo para volver a escribirle.', forgot_link:'¿Has olvidado tu contraseña?', reset_title:'Recuperar contraseña', reset_hint:'Te enviaremos un código al correo universitario que verificaste. Solo funciona si tu cuenta está verificada.', reset_send:'Enviar código', reset_sent:'Código enviado a tu correo universitario.', reset_newpass_ph:'Nueva contraseña (mín. 6 caracteres)', reset_confirm:'Cambiar contraseña', reset_ok:'Contraseña cambiada. Ya puedes entrar.', reset_err_not_verified:'Esta cuenta no tiene un correo universitario verificado, así que no se puede recuperar por aquí.', reset_err_weak_password:'La contraseña debe tener al menos 6 caracteres.', reset_err_bad_nickname:'Escribe tu nickname.', blocked_list_title:'Usuarios bloqueados', unblock_short:'Desbloquear', appeal_notice:'⚠ Tu perfil acumula {n} reportes de otros usuarios y los demás ven un aviso. Si crees que son falsos, puedes apelar.', appeal_btn:'Apelar los reportes', appeal_title:'Apelar los reportes', appeal_desc:'Revisaremos tu caso. Cuéntanos por qué crees que los reportes no son justos.', appeal_ph:'Explica por qué crees que los reportes no son justos...', appeal_send:'Enviar apelación', appeal_pending:'Apelación enviada. La revisaremos pronto.', appeal_thanks:'Apelación enviada', appeal_thanks_sub:'La revisaremos pronto.', appeal_error:'No se ha podido enviar la apelación', feedback_error:'No se ha podido enviar',
     post_see_people:'Ver apuntados ({n})', part_organizer:'Organiza', part_you:'tú',
     part_hint:'Toca a alguien para ver su perfil, escribirle o reportarlo.',
   },
@@ -1159,7 +1176,7 @@ const TRANSLATIONS = {
     report_already:'Reportat ✓', report_error:'No s\'ha pogut enviar el report',
     report_warning:'⚠ Acumula {n} reports d\'altres usuaris',
     feedback_ph:'Explica\'ns què milloraries o què falla...', feedback_send_btn:'Enviar',
-    feedback_thanks:'Gràcies!', feedback_thanks_sub:'Hem rebut el teu missatge.', filter_btn:'Filtre', nav_search:'Cerca', search_ph:'Cerca per nickname', search_recent:'Recents', search_suggested:'Suggeriments per a tu', search_none:'No hem trobat ningú', blocked_chat_note:'Has bloquejat aquest usuari. Desbloqueja\'l per tornar-li a escriure.', forgot_link:'Has oblidat la contrasenya?', reset_title:'Recuperar contrasenya', reset_hint:'T\'enviarem un codi al correu universitari que vas verificar. Només funciona si el teu compte està verificat.', reset_send:'Envia el codi', reset_sent:'Codi enviat al teu correu universitari.', reset_newpass_ph:'Nova contrasenya (mín. 6 caràcters)', reset_confirm:'Canvia la contrasenya', reset_ok:'Contrasenya canviada. Ja pots entrar.', reset_err_not_verified:'Aquest compte no té un correu universitari verificat, així que no es pot recuperar per aquí.', reset_err_weak_password:'La contrasenya ha de tenir almenys 6 caràcters.', reset_err_bad_nickname:'Escriu el teu nickname.', blocked_list_title:'Usuaris bloquejats', unblock_short:'Desbloqueja', appeal_notice:'⚠ El teu perfil acumula {n} reports d\'altres usuaris i la resta veu un avís. Si creus que són falsos, pots apel·lar.', appeal_btn:'Apel·la els reports', appeal_title:'Apel·la els reports', appeal_desc:'Revisarem el teu cas. Explica\'ns per què creus que els reports no són justos.', appeal_ph:'Explica per què creus que els reports no són justos...', appeal_send:'Envia l\'apel·lació', appeal_pending:'Apel·lació enviada. La revisarem aviat.', appeal_thanks:'Apel·lació enviada', appeal_thanks_sub:'La revisarem aviat.', appeal_error:'No s\'ha pogut enviar l\'apel·lació', feedback_error:'No s\'ha pogut enviar',
+    feedback_thanks:'Gràcies!', feedback_thanks_sub:'Hem rebut el teu missatge.', theme_label:'Estil de l\'app', theme_night:'Nit', theme_navy:'Blanc i blau', theme_green:'Blanc i verd', theme_orange:'Blanc i taronja', filter_btn:'Filtre', nav_search:'Cerca', search_ph:'Cerca per nickname', search_recent:'Recents', search_suggested:'Suggeriments per a tu', search_none:'No hem trobat ningú', blocked_chat_note:'Has bloquejat aquest usuari. Desbloqueja\'l per tornar-li a escriure.', forgot_link:'Has oblidat la contrasenya?', reset_title:'Recuperar contrasenya', reset_hint:'T\'enviarem un codi al correu universitari que vas verificar. Només funciona si el teu compte està verificat.', reset_send:'Envia el codi', reset_sent:'Codi enviat al teu correu universitari.', reset_newpass_ph:'Nova contrasenya (mín. 6 caràcters)', reset_confirm:'Canvia la contrasenya', reset_ok:'Contrasenya canviada. Ja pots entrar.', reset_err_not_verified:'Aquest compte no té un correu universitari verificat, així que no es pot recuperar per aquí.', reset_err_weak_password:'La contrasenya ha de tenir almenys 6 caràcters.', reset_err_bad_nickname:'Escriu el teu nickname.', blocked_list_title:'Usuaris bloquejats', unblock_short:'Desbloqueja', appeal_notice:'⚠ El teu perfil acumula {n} reports d\'altres usuaris i la resta veu un avís. Si creus que són falsos, pots apel·lar.', appeal_btn:'Apel·la els reports', appeal_title:'Apel·la els reports', appeal_desc:'Revisarem el teu cas. Explica\'ns per què creus que els reports no són justos.', appeal_ph:'Explica per què creus que els reports no són justos...', appeal_send:'Envia l\'apel·lació', appeal_pending:'Apel·lació enviada. La revisarem aviat.', appeal_thanks:'Apel·lació enviada', appeal_thanks_sub:'La revisarem aviat.', appeal_error:'No s\'ha pogut enviar l\'apel·lació', feedback_error:'No s\'ha pogut enviar',
     post_see_people:'Veure apuntats ({n})', part_organizer:'Organitza', part_you:'tu',
     part_hint:'Toca algú per veure el seu perfil, escriure-li o reportar-lo.',
   },
@@ -1269,7 +1286,7 @@ const TRANSLATIONS = {
     report_already:'Reported ✓', report_error:'Couldn\'t send the report',
     report_warning:'⚠ Has {n} reports from other users',
     feedback_ph:'Tell us what you\'d improve or what\'s broken...', feedback_send_btn:'Send',
-    feedback_thanks:'Thank you!', feedback_thanks_sub:'We\'ve received your message.', filter_btn:'Filter', nav_search:'Search', search_ph:'Search by nickname', search_recent:'Recent', search_suggested:'Suggestions for you', search_none:'We couldn\'t find anyone', blocked_chat_note:'You blocked this user. Unblock them to write again.', forgot_link:'Forgot your password?', reset_title:'Reset password', reset_hint:'We\'ll send a code to the university email you verified. It only works if your account is verified.', reset_send:'Send code', reset_sent:'Code sent to your university email.', reset_newpass_ph:'New password (min. 6 characters)', reset_confirm:'Change password', reset_ok:'Password changed. You can sign in now.', reset_err_not_verified:'This account has no verified university email, so it can\'t be recovered here.', reset_err_weak_password:'Password must be at least 6 characters.', reset_err_bad_nickname:'Enter your nickname.', blocked_list_title:'Blocked users', unblock_short:'Unblock', appeal_notice:'⚠ Your profile has {n} reports from other users and others see a warning. If you think they are false, you can appeal.', appeal_btn:'Appeal the reports', appeal_title:'Appeal the reports', appeal_desc:'We will review your case. Tell us why you think the reports are unfair.', appeal_ph:'Explain why you think the reports are unfair...', appeal_send:'Send appeal', appeal_pending:'Appeal sent. We will review it soon.', appeal_thanks:'Appeal sent', appeal_thanks_sub:'We will review it soon.', appeal_error:'Couldn\'t send the appeal', feedback_error:'Couldn\'t send it',
+    feedback_thanks:'Thank you!', feedback_thanks_sub:'We\'ve received your message.', theme_label:'App style', theme_night:'Night', theme_navy:'White & blue', theme_green:'White & green', theme_orange:'White & orange', filter_btn:'Filter', nav_search:'Search', search_ph:'Search by nickname', search_recent:'Recent', search_suggested:'Suggestions for you', search_none:'We couldn\'t find anyone', blocked_chat_note:'You blocked this user. Unblock them to write again.', forgot_link:'Forgot your password?', reset_title:'Reset password', reset_hint:'We\'ll send a code to the university email you verified. It only works if your account is verified.', reset_send:'Send code', reset_sent:'Code sent to your university email.', reset_newpass_ph:'New password (min. 6 characters)', reset_confirm:'Change password', reset_ok:'Password changed. You can sign in now.', reset_err_not_verified:'This account has no verified university email, so it can\'t be recovered here.', reset_err_weak_password:'Password must be at least 6 characters.', reset_err_bad_nickname:'Enter your nickname.', blocked_list_title:'Blocked users', unblock_short:'Unblock', appeal_notice:'⚠ Your profile has {n} reports from other users and others see a warning. If you think they are false, you can appeal.', appeal_btn:'Appeal the reports', appeal_title:'Appeal the reports', appeal_desc:'We will review your case. Tell us why you think the reports are unfair.', appeal_ph:'Explain why you think the reports are unfair...', appeal_send:'Send appeal', appeal_pending:'Appeal sent. We will review it soon.', appeal_thanks:'Appeal sent', appeal_thanks_sub:'We will review it soon.', appeal_error:'Couldn\'t send the appeal', feedback_error:'Couldn\'t send it',
     post_see_people:'See who joined ({n})', part_organizer:'Organiser', part_you:'you',
     part_hint:'Tap someone to view their profile, message or report them.',
   }
@@ -1380,7 +1397,7 @@ function toggleObSport(id){
   document.querySelectorAll('#obSports .tagopt').forEach(btn=>{
     const on = obSelectedSports.has(btn.dataset.id);
     btn.classList.toggle('active', on);
-    btn.style.background = on ? '#C6F135' : '';
+    btn.style.background = on ? 'var(--lime)' : '';
   });
 }
 function setOrigin(o){
@@ -2822,6 +2839,17 @@ let profileEditing = false;
 let editSelectedSports = new Set();
 let editPhotoData = null;
 
+const THEME_META = {dark:'#0F1B2B', navy:'#F3F6FB', green:'#F3F8F4', orange:'#FBF6F2'};
+function currentTheme(){ return document.documentElement.getAttribute('data-theme') || 'dark'; }
+function setTheme(id){
+  if(!THEME_META[id]) id = 'dark';
+  if(id === 'dark') document.documentElement.removeAttribute('data-theme'); else document.documentElement.setAttribute('data-theme', id);
+  try{ localStorage.setItem('enganchat_theme', id === 'dark' ? '' : id); }catch(e){}
+  const m = document.querySelector('meta[name="theme-color"]');
+  if(m) m.setAttribute('content', THEME_META[id]);
+  renderProfile();
+  renderFeed();
+}
 function renderProfile(){
   const p = myProfile;
   const body = document.getElementById('profileBody');
@@ -2890,6 +2918,14 @@ function renderProfile(){
       <div class="inforow"><span class="k">${t('profile_joined')}</span><span class="v">${joinedCount}</span></div>
     </div>
     <div class="field" style="margin-top:20px;">
+      <label>${t('theme_label')}</label>
+      <div class="segrow" style="flex-wrap:wrap;">
+        ${[['dark','#C6F135','#0F1B2B','theme_night'],['navy','#1E3A8A','#FFFFFF','theme_navy'],['green','#15803D','#FFFFFF','theme_green'],['orange','#E8590C','#FFFFFF','theme_orange']].map(function(x){
+          return '<button type="button" class="segbtn ' + (currentTheme()===x[0]?'active':'') + '" style="display:flex; align-items:center; justify-content:center; gap:8px;" onclick="setTheme(\'' + x[0] + '\')"><span style="width:14px;height:14px;border-radius:50%;background:' + x[1] + ';border:2px solid ' + x[2] + ';box-shadow:0 0 0 1px var(--line);"></span>' + t(x[3]) + '</button>';
+        }).join('')}
+      </div>
+    </div>
+    <div class="field">
       <label>${t('app_lang_label')}</label>
       <div class="segrow">
         <button type="button" class="segbtn langswitch-btn ${state.lang==='es'?'active':''}" data-lang="es" onclick="setAppLang('es')">Español</button>
@@ -2908,7 +2944,7 @@ function renderProfile(){
 function renderEditSportsPicker(){
   const wrap = document.getElementById('editSportsPicker');
   wrap.innerHTML = CATEGORIES.filter(c=>c.group==='sport').map(c=>
-    `<button type="button" class="tagopt ${editSelectedSports.has(c.id)?'active':''}" style="${editSelectedSports.has(c.id)?'background:#C6F135;':''}" data-id="${c.id}" onclick="toggleEditSport('${c.id}')">${catLabel(c)}</button>`
+    `<button type="button" class="tagopt ${editSelectedSports.has(c.id)?'active':''}" style="${editSelectedSports.has(c.id)?'background:var(--lime);':''}" data-id="${c.id}" onclick="toggleEditSport('${c.id}')">${catLabel(c)}</button>`
   ).join('');
 }
 function toggleEditSport(id){
