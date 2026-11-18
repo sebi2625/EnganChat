@@ -159,6 +159,11 @@
   .urgent::before{content:'\25CF'; font-size:8px;}
   .post-title{font-family:'League Spartan'; font-size:16.5px; font-weight:700; margin-bottom:2px; line-height:1.25;}
   .post-desc{font-size:13.5px; color:var(--muted); line-height:1.4; margin-bottom:8px;}
+  .post.tappable{cursor:pointer;}
+  .post.tappable .post-desc{display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;}
+  .pd-title{font-size:22px; font-weight:700; line-height:1.25; margin:10px 0 6px; word-break:break-word;}
+  .pd-label{font-size:12px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); margin:22px 2px 8px;}
+  .pd-desc{font-size:15px; line-height:1.5; white-space:pre-wrap; word-break:break-word;}
   .post-meta{display:flex; flex-wrap:wrap; gap:10px; font-size:12.5px; color:var(--muted);}
   .post-meta span{display:flex; align-items:center; gap:4px;}
   .post-meta a{color:var(--lime); font-weight:600; text-decoration:none;}
@@ -432,6 +437,17 @@
   </nav>
 
   <!-- CREATE SCREEN -->
+  <div class="screen" id="postDetailScreen">
+    <div class="screen-header">
+      <button class="iconbtn" onclick="closeScreen('postDetailScreen')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+      </button>
+      <h3 data-i18n="pd_title">Plan</h3>
+      <div style="width:34px;"></div>
+    </div>
+    <div class="screen-body" id="postDetailBody"></div>
+  </div>
+
   <div class="screen" id="createScreen">
     <div class="screen-header">
       <button class="iconbtn" onclick="closeScreen('createScreen')">
@@ -1081,7 +1097,7 @@ const TRANSLATIONS = {
     report_already:'Reportado ✓', report_error:'No se ha podido enviar el reporte',
     report_warning:'⚠ Acumula {n} reportes de otros usuarios',
     feedback_ph:'Cuéntanos qué mejorarías o qué falla...', feedback_send_btn:'Enviar',
-    feedback_thanks:'¡Gracias!', feedback_thanks_sub:'Hemos recibido tu mensaje.', bio_label:'Bio', bio_ph:'Cuenta algo sobre ti (máx. 120 caracteres)', theme_label:'Estilo de la app', push_label:'Notificaciones', push_on_btn:'Activar notificaciones', push_off_btn:'Notificaciones activadas · Desactivar', push_denied:'Has bloqueado las notificaciones en este navegador. Actívalas en los ajustes del sitio.', push_unsupported:'Para recibir notificaciones en iPhone, instala primero la app: Compartir → Añadir a pantalla de inicio.', push_error:'No se han podido activar las notificaciones', push_enabled:'Notificaciones activadas', theme_night:'Noche', theme_navy:'Blanco y azul', theme_green:'Blanco y verde', theme_orange:'Blanco y naranja', filter_btn:'Filtro', nav_search:'Buscar', search_ph:'Busca por nickname', search_recent:'Recientes', search_suggested:'Sugerencias para ti', search_none:'No hemos encontrado a nadie', blocked_chat_note:'Has bloqueado a este usuario. Desbloquéalo para volver a escribirle.', forgot_link:'¿Has olvidado tu contraseña?', reset_title:'Recuperar contraseña', reset_hint:'Te enviaremos un código al correo universitario que verificaste. Solo funciona si tu cuenta está verificada.', reset_send:'Enviar código', reset_sent:'Código enviado a tu correo universitario.', reset_newpass_ph:'Nueva contraseña (mín. 6 caracteres)', reset_confirm:'Cambiar contraseña', reset_ok:'Contraseña cambiada. Ya puedes entrar.', reset_err_not_verified:'Esta cuenta no tiene un correo universitario verificado, así que no se puede recuperar por aquí.', reset_err_weak_password:'La contraseña debe tener al menos 6 caracteres.', reset_err_bad_nickname:'Escribe tu nickname.', blocked_list_title:'Usuarios bloqueados', unblock_short:'Desbloquear', appeal_notice:'⚠ Tu perfil acumula {n} reportes de otros usuarios y los demás ven un aviso. Si crees que son falsos, puedes apelar.', appeal_btn:'Apelar los reportes', appeal_title:'Apelar los reportes', appeal_desc:'Revisaremos tu caso. Cuéntanos por qué crees que los reportes no son justos.', appeal_ph:'Explica por qué crees que los reportes no son justos...', appeal_send:'Enviar apelación', appeal_pending:'Apelación enviada. La revisaremos pronto.', appeal_thanks:'Apelación enviada', appeal_thanks_sub:'La revisaremos pronto.', appeal_error:'No se ha podido enviar la apelación', feedback_error:'No se ha podido enviar',
+    feedback_thanks:'¡Gracias!', feedback_thanks_sub:'Hemos recibido tu mensaje.', bio_label:'Bio', bio_ph:'Cuenta algo sobre ti (máx. 120 caracteres)', theme_label:'Estilo de la app', push_label:'Notificaciones', pd_title:'Plan', pd_when:'Cuándo', pd_where:'Dónde', pd_spots:'Plazas', pd_desc:'Descripción', pd_nodesc:'Sin descripción', pd_people:'Participantes', pd_chat:'Abrir chat del plan', pd_organizer_by:'Organiza', push_on_btn:'Activar notificaciones', push_off_btn:'Notificaciones activadas · Desactivar', push_denied:'Has bloqueado las notificaciones en este navegador. Actívalas en los ajustes del sitio.', push_unsupported:'Para recibir notificaciones en iPhone, instala primero la app: Compartir → Añadir a pantalla de inicio.', push_error:'No se han podido activar las notificaciones', push_enabled:'Notificaciones activadas', theme_night:'Noche', theme_navy:'Blanco y azul', theme_green:'Blanco y verde', theme_orange:'Blanco y naranja', filter_btn:'Filtro', nav_search:'Buscar', search_ph:'Busca por nickname', search_recent:'Recientes', search_suggested:'Sugerencias para ti', search_none:'No hemos encontrado a nadie', blocked_chat_note:'Has bloqueado a este usuario. Desbloquéalo para volver a escribirle.', forgot_link:'¿Has olvidado tu contraseña?', reset_title:'Recuperar contraseña', reset_hint:'Te enviaremos un código al correo universitario que verificaste. Solo funciona si tu cuenta está verificada.', reset_send:'Enviar código', reset_sent:'Código enviado a tu correo universitario.', reset_newpass_ph:'Nueva contraseña (mín. 6 caracteres)', reset_confirm:'Cambiar contraseña', reset_ok:'Contraseña cambiada. Ya puedes entrar.', reset_err_not_verified:'Esta cuenta no tiene un correo universitario verificado, así que no se puede recuperar por aquí.', reset_err_weak_password:'La contraseña debe tener al menos 6 caracteres.', reset_err_bad_nickname:'Escribe tu nickname.', blocked_list_title:'Usuarios bloqueados', unblock_short:'Desbloquear', appeal_notice:'⚠ Tu perfil acumula {n} reportes de otros usuarios y los demás ven un aviso. Si crees que son falsos, puedes apelar.', appeal_btn:'Apelar los reportes', appeal_title:'Apelar los reportes', appeal_desc:'Revisaremos tu caso. Cuéntanos por qué crees que los reportes no son justos.', appeal_ph:'Explica por qué crees que los reportes no son justos...', appeal_send:'Enviar apelación', appeal_pending:'Apelación enviada. La revisaremos pronto.', appeal_thanks:'Apelación enviada', appeal_thanks_sub:'La revisaremos pronto.', appeal_error:'No se ha podido enviar la apelación', feedback_error:'No se ha podido enviar',
     post_see_people:'Ver apuntados ({n})', part_organizer:'Organiza', part_you:'tú',
     part_hint:'Toca a alguien para ver su perfil, escribirle o reportarlo.',
   },
@@ -1191,7 +1207,7 @@ const TRANSLATIONS = {
     report_already:'Reportat ✓', report_error:'No s\'ha pogut enviar el report',
     report_warning:'⚠ Acumula {n} reports d\'altres usuaris',
     feedback_ph:'Explica\'ns què milloraries o què falla...', feedback_send_btn:'Enviar',
-    feedback_thanks:'Gràcies!', feedback_thanks_sub:'Hem rebut el teu missatge.', bio_label:'Bio', bio_ph:'Explica alguna cosa sobre tu (màx. 120 caràcters)', theme_label:'Estil de l\'app', push_label:'Notificacions', push_on_btn:'Activa les notificacions', push_off_btn:'Notificacions activades · Desactiva', push_denied:'Has bloquejat les notificacions en aquest navegador. Activa-les als ajustos del lloc.', push_unsupported:'Per rebre notificacions a l\'iPhone, instal·la primer l\'app: Compartir → Afegir a la pantalla d\'inici.', push_error:'No s\'han pogut activar les notificacions', push_enabled:'Notificacions activades', theme_night:'Nit', theme_navy:'Blanc i blau', theme_green:'Blanc i verd', theme_orange:'Blanc i taronja', filter_btn:'Filtre', nav_search:'Cerca', search_ph:'Cerca per nickname', search_recent:'Recents', search_suggested:'Suggeriments per a tu', search_none:'No hem trobat ningú', blocked_chat_note:'Has bloquejat aquest usuari. Desbloqueja\'l per tornar-li a escriure.', forgot_link:'Has oblidat la contrasenya?', reset_title:'Recuperar contrasenya', reset_hint:'T\'enviarem un codi al correu universitari que vas verificar. Només funciona si el teu compte està verificat.', reset_send:'Envia el codi', reset_sent:'Codi enviat al teu correu universitari.', reset_newpass_ph:'Nova contrasenya (mín. 6 caràcters)', reset_confirm:'Canvia la contrasenya', reset_ok:'Contrasenya canviada. Ja pots entrar.', reset_err_not_verified:'Aquest compte no té un correu universitari verificat, així que no es pot recuperar per aquí.', reset_err_weak_password:'La contrasenya ha de tenir almenys 6 caràcters.', reset_err_bad_nickname:'Escriu el teu nickname.', blocked_list_title:'Usuaris bloquejats', unblock_short:'Desbloqueja', appeal_notice:'⚠ El teu perfil acumula {n} reports d\'altres usuaris i la resta veu un avís. Si creus que són falsos, pots apel·lar.', appeal_btn:'Apel·la els reports', appeal_title:'Apel·la els reports', appeal_desc:'Revisarem el teu cas. Explica\'ns per què creus que els reports no són justos.', appeal_ph:'Explica per què creus que els reports no són justos...', appeal_send:'Envia l\'apel·lació', appeal_pending:'Apel·lació enviada. La revisarem aviat.', appeal_thanks:'Apel·lació enviada', appeal_thanks_sub:'La revisarem aviat.', appeal_error:'No s\'ha pogut enviar l\'apel·lació', feedback_error:'No s\'ha pogut enviar',
+    feedback_thanks:'Gràcies!', feedback_thanks_sub:'Hem rebut el teu missatge.', bio_label:'Bio', bio_ph:'Explica alguna cosa sobre tu (màx. 120 caràcters)', theme_label:'Estil de l\'app', push_label:'Notificacions', pd_title:'Pla', pd_when:'Quan', pd_where:'On', pd_spots:'Places', pd_desc:'Descripció', pd_nodesc:'Sense descripció', pd_people:'Participants', pd_chat:'Obre el xat del pla', pd_organizer_by:'Organitza', push_on_btn:'Activa les notificacions', push_off_btn:'Notificacions activades · Desactiva', push_denied:'Has bloquejat les notificacions en aquest navegador. Activa-les als ajustos del lloc.', push_unsupported:'Per rebre notificacions a l\'iPhone, instal·la primer l\'app: Compartir → Afegir a la pantalla d\'inici.', push_error:'No s\'han pogut activar les notificacions', push_enabled:'Notificacions activades', theme_night:'Nit', theme_navy:'Blanc i blau', theme_green:'Blanc i verd', theme_orange:'Blanc i taronja', filter_btn:'Filtre', nav_search:'Cerca', search_ph:'Cerca per nickname', search_recent:'Recents', search_suggested:'Suggeriments per a tu', search_none:'No hem trobat ningú', blocked_chat_note:'Has bloquejat aquest usuari. Desbloqueja\'l per tornar-li a escriure.', forgot_link:'Has oblidat la contrasenya?', reset_title:'Recuperar contrasenya', reset_hint:'T\'enviarem un codi al correu universitari que vas verificar. Només funciona si el teu compte està verificat.', reset_send:'Envia el codi', reset_sent:'Codi enviat al teu correu universitari.', reset_newpass_ph:'Nova contrasenya (mín. 6 caràcters)', reset_confirm:'Canvia la contrasenya', reset_ok:'Contrasenya canviada. Ja pots entrar.', reset_err_not_verified:'Aquest compte no té un correu universitari verificat, així que no es pot recuperar per aquí.', reset_err_weak_password:'La contrasenya ha de tenir almenys 6 caràcters.', reset_err_bad_nickname:'Escriu el teu nickname.', blocked_list_title:'Usuaris bloquejats', unblock_short:'Desbloqueja', appeal_notice:'⚠ El teu perfil acumula {n} reports d\'altres usuaris i la resta veu un avís. Si creus que són falsos, pots apel·lar.', appeal_btn:'Apel·la els reports', appeal_title:'Apel·la els reports', appeal_desc:'Revisarem el teu cas. Explica\'ns per què creus que els reports no són justos.', appeal_ph:'Explica per què creus que els reports no són justos...', appeal_send:'Envia l\'apel·lació', appeal_pending:'Apel·lació enviada. La revisarem aviat.', appeal_thanks:'Apel·lació enviada', appeal_thanks_sub:'La revisarem aviat.', appeal_error:'No s\'ha pogut enviar l\'apel·lació', feedback_error:'No s\'ha pogut enviar',
     post_see_people:'Veure apuntats ({n})', part_organizer:'Organitza', part_you:'tu',
     part_hint:'Toca algú per veure el seu perfil, escriure-li o reportar-lo.',
   },
@@ -1301,7 +1317,7 @@ const TRANSLATIONS = {
     report_already:'Reported ✓', report_error:'Couldn\'t send the report',
     report_warning:'⚠ Has {n} reports from other users',
     feedback_ph:'Tell us what you\'d improve or what\'s broken...', feedback_send_btn:'Send',
-    feedback_thanks:'Thank you!', feedback_thanks_sub:'We\'ve received your message.', bio_label:'Bio', bio_ph:'Tell us something about you (max. 120 characters)', theme_label:'App style', push_label:'Notifications', push_on_btn:'Turn on notifications', push_off_btn:'Notifications on · Turn off', push_denied:'You blocked notifications in this browser. Enable them in the site settings.', push_unsupported:'To get notifications on iPhone, install the app first: Share → Add to Home Screen.', push_error:'Couldn\'t turn on notifications', push_enabled:'Notifications on', theme_night:'Night', theme_navy:'White & blue', theme_green:'White & green', theme_orange:'White & orange', filter_btn:'Filter', nav_search:'Search', search_ph:'Search by nickname', search_recent:'Recent', search_suggested:'Suggestions for you', search_none:'We couldn\'t find anyone', blocked_chat_note:'You blocked this user. Unblock them to write again.', forgot_link:'Forgot your password?', reset_title:'Reset password', reset_hint:'We\'ll send a code to the university email you verified. It only works if your account is verified.', reset_send:'Send code', reset_sent:'Code sent to your university email.', reset_newpass_ph:'New password (min. 6 characters)', reset_confirm:'Change password', reset_ok:'Password changed. You can sign in now.', reset_err_not_verified:'This account has no verified university email, so it can\'t be recovered here.', reset_err_weak_password:'Password must be at least 6 characters.', reset_err_bad_nickname:'Enter your nickname.', blocked_list_title:'Blocked users', unblock_short:'Unblock', appeal_notice:'⚠ Your profile has {n} reports from other users and others see a warning. If you think they are false, you can appeal.', appeal_btn:'Appeal the reports', appeal_title:'Appeal the reports', appeal_desc:'We will review your case. Tell us why you think the reports are unfair.', appeal_ph:'Explain why you think the reports are unfair...', appeal_send:'Send appeal', appeal_pending:'Appeal sent. We will review it soon.', appeal_thanks:'Appeal sent', appeal_thanks_sub:'We will review it soon.', appeal_error:'Couldn\'t send the appeal', feedback_error:'Couldn\'t send it',
+    feedback_thanks:'Thank you!', feedback_thanks_sub:'We\'ve received your message.', bio_label:'Bio', bio_ph:'Tell us something about you (max. 120 characters)', theme_label:'App style', push_label:'Notifications', pd_title:'Plan', pd_when:'When', pd_where:'Where', pd_spots:'Spots', pd_desc:'Description', pd_nodesc:'No description', pd_people:'Participants', pd_chat:'Open plan chat', pd_organizer_by:'Organised by', push_on_btn:'Turn on notifications', push_off_btn:'Notifications on · Turn off', push_denied:'You blocked notifications in this browser. Enable them in the site settings.', push_unsupported:'To get notifications on iPhone, install the app first: Share → Add to Home Screen.', push_error:'Couldn\'t turn on notifications', push_enabled:'Notifications on', theme_night:'Night', theme_navy:'White & blue', theme_green:'White & green', theme_orange:'White & orange', filter_btn:'Filter', nav_search:'Search', search_ph:'Search by nickname', search_recent:'Recent', search_suggested:'Suggestions for you', search_none:'We couldn\'t find anyone', blocked_chat_note:'You blocked this user. Unblock them to write again.', forgot_link:'Forgot your password?', reset_title:'Reset password', reset_hint:'We\'ll send a code to the university email you verified. It only works if your account is verified.', reset_send:'Send code', reset_sent:'Code sent to your university email.', reset_newpass_ph:'New password (min. 6 characters)', reset_confirm:'Change password', reset_ok:'Password changed. You can sign in now.', reset_err_not_verified:'This account has no verified university email, so it can\'t be recovered here.', reset_err_weak_password:'Password must be at least 6 characters.', reset_err_bad_nickname:'Enter your nickname.', blocked_list_title:'Blocked users', unblock_short:'Unblock', appeal_notice:'⚠ Your profile has {n} reports from other users and others see a warning. If you think they are false, you can appeal.', appeal_btn:'Appeal the reports', appeal_title:'Appeal the reports', appeal_desc:'We will review your case. Tell us why you think the reports are unfair.', appeal_ph:'Explain why you think the reports are unfair...', appeal_send:'Send appeal', appeal_pending:'Appeal sent. We will review it soon.', appeal_thanks:'Appeal sent', appeal_thanks_sub:'We will review it soon.', appeal_error:'Couldn\'t send the appeal', feedback_error:'Couldn\'t send it',
     post_see_people:'See who joined ({n})', part_organizer:'Organiser', part_you:'you',
     part_hint:'Tap someone to view their profile, message or report them.',
   }
@@ -2058,6 +2074,7 @@ function renderHistoryBlock(history, showEmptyHint){
 }
 function renderFeed(){
   renderHomeBar();
+  if(postDetailId) renderPostDetail();
   document.getElementById('chiprow').style.display = (state.tab === 'home' && filterOpen) ? 'flex' : 'none';
   if(state.tab === 'chats'){ renderChatsList(); return; }
   if(state.tab === 'search'){
@@ -2091,7 +2108,7 @@ function renderFeed(){
       return `<span class="tagpill" style="--pillcolor:${c.color}">${catLabel(c)}</span>`;
     }).join('');
     return `
-    <div class="post" style="--tagcolor:${primaryCat.color}">
+    <div class="post tappable" style="--tagcolor:${primaryCat.color}" onclick="onPostCardTap(event,'${p.id}')">
       <div class="post-main">
         <div class="post-toprow">
           ${pills}
@@ -2103,8 +2120,7 @@ function renderFeed(){
         <div class="post-meta">
           <span>&#128205; ${escapeHtml(p.location || 'Por confirmar')}</span>
           <span>&#128197; ${dateFmt}</span>
-          ${safeUrl(p.map_link) ? `<a href="${escapeAttr(safeUrl(p.map_link))}" target="_blank" rel="noopener">${t('post_directions')}</a>` : ''}
-          <button type="button" class="linkbtn" onclick="openParticipants('${p.id}')">&#128101; ${t('post_see_people', {n: participantIdsOf(p).length})}</button>
+          <span>&#128101; ${participantIdsOf(p).length}</span>
         </div>
         <div class="post-footer">
           <div class="creator" ${(!isOwner && creatorProfile) ? `style="cursor:pointer;" onclick="openUserCard('${p.creator_id}')"` : ''}>
@@ -2135,6 +2151,87 @@ function renderFeed(){
       </div>
     </div>`;
   }).join('') + historyHtml;
+}
+let postDetailId = null;
+function onPostCardTap(ev, id){
+  if(ev && ev.target && ev.target.closest && ev.target.closest('a,button,.creator')) return;
+  openPostDetail(id);
+}
+async function openPostDetail(id){
+  postDetailId = id;
+  await renderPostDetail();
+  if(postDetailId === id) openScreen('postDetailScreen');
+}
+function openPostChat(id){
+  closeScreen('postDetailScreen');
+  openChat('post', id);
+}
+async function renderPostDetail(){
+  const body = document.getElementById('postDetailBody');
+  if(!body || !postDetailId) return;
+  const id = postDetailId;
+  const p = cache.posts.find(x => x.id === id);
+  if(!p){
+    if(document.getElementById('postDetailScreen').classList.contains('open')) closeScreen('postDetailScreen');
+    postDetailId = null;
+    return;
+  }
+  const ids = participantIdsOf(p);
+  await Promise.all([ensureProfilesCached(ids.concat([p.creator_id])), loadReportData()]);
+  if(postDetailId !== id) return;
+  const primaryCat = catById((p.cats||[])[0]);
+  const urg = urgencyLabel(p.event_date);
+  const spotsTaken = spotsTakenFor(p);
+  const spotsLeft = p.spots_total - spotsTaken;
+  const isFull = spotsLeft <= 0;
+  const joined = isJoined(p);
+  const isOwner = !!(myProfile && p.creator_id === myProfile.id);
+  const creator = cache.profilesById[p.creator_id];
+  const dateFmt = p.event_date
+    ? (new Date(p.event_date + 'T00:00:00').toLocaleDateString(langLocale(), {weekday:'long', day:'numeric', month:'long'}) + (p.event_time ? ' · ' + p.event_time.slice(0,5) : ''))
+    : t('urg_nodate');
+  const pills = (p.cats||[]).map(function(cid){
+    const c = catById(cid);
+    return '<span class="tagpill" style="--pillcolor:' + c.color + '">' + catLabel(c) + '</span>';
+  }).join('');
+  const modeTag = p.mode === 'search' ? t('post_search_tag') : (p.mode === 'looking' ? t('post_looking_tag') : t('post_event_tag'));
+  const spotsTxt = p.mode === 'looking' ? (spotsTaken + ' ' + t('post_looking_suffix')) : (isFull ? t('post_full') : (spotsLeft + ' ' + t('post_spots')));
+  const url = safeUrl(p.map_link);
+  let actions = '';
+  if(isOwner){
+    actions = '<div style="display:flex; gap:10px; margin-top:18px;">' +
+      '<button class="secondary-btn" style="margin-top:0;" onclick="openEditPost(\'' + p.id + '\')">' + escapeHtml(t('post_edit')) + '</button>' +
+      '<button class="secondary-btn" style="margin-top:0; color:var(--coral);" onclick="deletePost(\'' + p.id + '\')">' + escapeHtml(t('post_delete')) + '</button></div>';
+  } else if(p.mode === 'looking'){
+    actions = '<button class="joinbtn ' + (joined ? 'joined' : '') + '" style="width:100%; margin-top:18px; padding:13px;" onclick="toggleJoin(\'' + p.id + '\')">' + (joined ? t('post_contacted') : t('post_contact')) + '</button>';
+  } else {
+    actions = '<button class="joinbtn ' + (joined ? 'joined' : '') + '" style="width:100%; margin-top:18px; padding:13px;" onclick="toggleJoin(\'' + p.id + '\')"' + ((isFull && !joined) ? ' disabled style="opacity:0.4; width:100%; margin-top:18px; padding:13px;"' : '') + '>' + (joined ? t('post_joined') : t('post_join')) + '</button>';
+  }
+  const chatBtn = (joined || isOwner) ? ('<button class="primary-btn" style="margin-top:10px;" onclick="openPostChat(\'' + p.id + '\')">&#128172; ' + escapeHtml(t('pd_chat')) + '</button>') : '';
+  const people = ids.map(function(uid){
+    const badge = uid === p.creator_id ? ('<span class="microchip" style="color:var(--lime);">' + t('part_organizer') + '</span>') : '';
+    return partRowHtml(uid, badge, !!(myProfile && uid === myProfile.id));
+  }).join('');
+  body.innerHTML =
+    '<div style="--tagcolor:' + primaryCat.color + ';">' +
+    '<div class="post-toprow">' + pills +
+      '<span class="tagpill" style="background:transparent;color:var(--muted);">' + modeTag + '</span>' +
+      (urg.urgent ? '<span class="urgent">' + urg.text + '</span>' : '<span style="font-size:11px;color:var(--muted);font-weight:600;">' + urg.text + '</span>') +
+    '</div>' +
+    '<div class="pd-title">' + escapeHtml(p.title) + '</div>' +
+    '<div class="creator" style="margin:4px 0 14px;' + ((!isOwner && creator) ? ' cursor:pointer;" onclick="openUserCard(\'' + p.creator_id + '\')' : '') + '">' +
+      '<span class="flagdot ' + (creator && creator.origin === 'intl' ? 'intl' : '') + '"></span> ' + escapeHtml(t('pd_organizer_by')) + ' <b>' + escapeHtml(creator ? dn(creator) : '—') + '</b>' + vmark(creator) +
+    '</div>' +
+    '<div class="inforow"><span class="k">' + t('pd_when') + '</span><span class="v">' + escapeHtml(dateFmt) + '</span></div>' +
+    '<div class="inforow"><span class="k">' + t('pd_where') + '</span><span class="v">' + escapeHtml(p.location || '—') + '</span></div>' +
+    '<div class="inforow"><span class="k">' + t('pd_spots') + '</span><span class="v">' + escapeHtml(spotsTxt) + '</span></div>' +
+    (url ? '<a class="secondary-btn" style="display:block; text-align:center; text-decoration:none; margin-top:14px;" href="' + escapeAttr(url) + '" target="_blank" rel="noopener">&#128205; ' + t('post_directions') + '</a>' : '') +
+    '<div class="pd-label">' + t('pd_desc') + '</div>' +
+    '<div class="pd-desc">' + escapeHtml(p.description || t('pd_nodesc')) + '</div>' +
+    actions + chatBtn +
+    '<div class="pd-label">' + t('pd_people') + ' (' + ids.length + ')</div>' +
+    people +
+    '</div>';
 }
 async function toggleJoin(id){
   if(!myProfile) return;
@@ -2862,6 +2959,7 @@ function openScreen(id){
 function closeScreen(id){
   document.getElementById(id).classList.remove('open');
   if(id === 'profileScreen') cancelEditProfile();
+  if(id === 'postDetailScreen') postDetailId = null;
   if(id === 'chatDetailScreen'){
     unsubscribeChatRealtime();
     if(state.tab === 'chats' && chatsSubTab === 'chats') renderChatsList();
