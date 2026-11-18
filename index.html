@@ -757,6 +757,9 @@ let myPrivate = null;
 let cache = { posts: [], profilesById: {}, participantsByPost: {}, dmThreads: [], friendships: [] };
 let chatsSubTab = 'chats'; // 'chats' | 'friends'
 let friendshipsChannel = null;
+let friendshipsPoll = null;
+let friendsSig = '';
+document.addEventListener('visibilitychange', function(){ if(document.visibilityState === 'visible' && myProfile) refreshFriendships(); });
 let postsChannel = null;
 let partsRefreshTimer = null;
 let partOpenPostId = null;
@@ -1648,8 +1651,12 @@ async function refreshFriendships(){
   }
   knownPendingIds = new Set(pendingReceivedRequests().map(r=>r.id));
   updateChatsDot();
+  const newSig = JSON.stringify(cache.friendships.map(f => f.id + ':' + f.status).sort());
+  if(newSig === friendsSig) return;
+  friendsSig = newSig;
   if(state.tab === 'chats') renderFeed();
   else if(state.tab === 'search') renderSearchResults();
+  if(ucTargetId) updateCardFriendBtn(ucTargetId);
 }
 function updateChatsDot(){
   if(!myProfile) return;
@@ -1779,7 +1786,12 @@ function subscribeFriendshipsRealtime(){
     .channel(`friendships-${myProfile.id}`)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'friendships', filter: `requester_id=eq.${myProfile.id}` }, refreshFriendships)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'friendships', filter: `addressee_id=eq.${myProfile.id}` }, refreshFriendships)
+    .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'friendships' }, function(payload){
+      const id = payload && payload.old && payload.old.id;
+      if(id && cache.friendships.some(f => f.id === id)) refreshFriendships();
+    })
     .subscribe();
+  friendshipsPoll = setInterval(function(){ if(document.visibilityState === 'visible') refreshFriendships(); }, 15000);
 }
 function subscribePostsRealtime(){
   unsubscribePostsRealtime();
@@ -1803,6 +1815,7 @@ function schedulePartsRefresh(){
 }
 function unsubscribeFriendshipsRealtime(){
   if(friendshipsChannel){ sb.removeChannel(friendshipsChannel); friendshipsChannel = null; }
+  if(friendshipsPoll){ clearInterval(friendshipsPoll); friendshipsPoll = null; }
 }
 /* ---- friendship helpers ---- */
 function friendshipRowWith(uid){
