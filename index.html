@@ -483,6 +483,11 @@
         <input type="date" id="fDate">
         <div class="hint" data-i18n="date_hint">Si no pones fecha, tu plan aparecerá al final del listado y es más fácil que la gente se lo salte.</div>
       </div>
+      <div class="field" id="fEndWrap" style="display:none;">
+        <label data-i18n="create_end_label">Hasta (opcional)</label>
+        <input type="date" id="fEndDate">
+        <div class="hint" data-i18n="end_hint"></div>
+      </div>
       <div class="field">
         <label data-i18n="create_time_label">Hora (opcional)</label>
         <input type="time" id="fTime">
@@ -1070,7 +1075,7 @@ const TRANSLATIONS = {
     post_join:'Apuntarme', post_joined:'Apuntado ✓',
     post_looking_suffix:'buscando equipo', post_contact:'Contactar', post_contacted:'Contactado ✓',
     sys_label:'Sistema', sys_joined:'{name} se ha apuntado al plan.', sys_left:'{name} ha abandonado el plan.', sys_contacted:'{name} ha contactado sobre este plan.',
-    urg_today:'Hoy', urg_tomorrow:'Mañana', urg_indays:'En {n} días', urg_past:'Ya pasó',
+    urg_today:'Hoy', urg_ongoing:'En curso', create_end_label:'Hasta (opcional)', end_hint:'Para búsquedas de temporada: el plan seguirá visible hasta ese día.', end_error:'La fecha "Hasta" debe ser posterior a la de inicio.', urg_tomorrow:'Mañana', urg_indays:'En {n} días', urg_past:'Ya pasó',
     post_edit:'Editar', post_delete:'Borrar',
     delete_confirm_title:'Borrar publicación', delete_confirm_msg:'Se eliminará para todos y no se puede deshacer.', delete_confirm_btn:'Borrar',
     edit_post_title:'Editar publicación', save_changes_btn:'Guardar cambios',
@@ -1180,7 +1185,7 @@ const TRANSLATIONS = {
     post_join:'Apuntar-me', post_joined:'Apuntat ✓',
     post_looking_suffix:'buscant equip', post_contact:'Contactar', post_contacted:'Contactat ✓',
     sys_label:'Sistema', sys_joined:'{name} s\'ha apuntat al pla.', sys_left:'{name} ha abandonat el pla.', sys_contacted:'{name} ha contactat sobre aquest pla.',
-    urg_today:'Avui', urg_tomorrow:'Demà', urg_indays:'En {n} dies', urg_past:'Ja ha passat',
+    urg_today:'Avui', urg_ongoing:'En curs', create_end_label:'Fins a (opcional)', end_hint:'Per a cerques de temporada: el pla es mantindrà visible fins a aquest dia.', end_error:'La data "Fins a" ha de ser posterior a la d\'inici.', urg_tomorrow:'Demà', urg_indays:'En {n} dies', urg_past:'Ja ha passat',
     post_edit:'Editar', post_delete:'Esborrar',
     delete_confirm_title:'Esborrar publicació', delete_confirm_msg:'S\'eliminarà per a tothom i no es pot desfer.', delete_confirm_btn:'Esborrar',
     edit_post_title:'Editar publicació', save_changes_btn:'Desar canvis',
@@ -1290,7 +1295,7 @@ const TRANSLATIONS = {
     post_join:'Join', post_joined:'Joined ✓',
     post_looking_suffix:'looking for a team', post_contact:'Contact', post_contacted:'Contacted ✓',
     sys_label:'System', sys_joined:'{name} joined the plan.', sys_left:'{name} left the plan.', sys_contacted:'{name} reached out about this plan.',
-    urg_today:'Today', urg_tomorrow:'Tomorrow', urg_indays:'In {n} days', urg_past:'Already happened',
+    urg_today:'Today', urg_ongoing:'Ongoing', create_end_label:'Until (optional)', end_hint:'For season-long searches: the plan stays visible until that day.', end_error:'The "Until" date must be after the start date.', urg_tomorrow:'Tomorrow', urg_indays:'In {n} days', urg_past:'Already happened',
     post_edit:'Edit', post_delete:'Delete',
     delete_confirm_title:'Delete post', delete_confirm_msg:'This will be removed for everyone and can\'t be undone.', delete_confirm_btn:'Delete',
     edit_post_title:'Edit post', save_changes_btn:'Save changes',
@@ -1623,7 +1628,7 @@ async function refreshData(){
   const cut = new Date(); cut.setHours(0,0,0,0); cut.setDate(cut.getDate() - 8);
   const cutStr = cut.getFullYear() + '-' + String(cut.getMonth() + 1).padStart(2, '0') + '-' + String(cut.getDate()).padStart(2, '0');
   const [{data:posts}, {data:dms}, {data:friendships}, {data:blks}] = await Promise.all([
-    sb.from('posts').select('*').or('event_date.is.null,event_date.gte.' + cutStr).order('created_at', {ascending:false}).limit(300),
+    sb.from('posts').select('*').or('event_date.is.null,event_date.gte.' + cutStr + ',end_date.gte.' + cutStr).order('created_at', {ascending:false}).limit(300),
     sb.from('dm_threads').select('*').or(`user_a.eq.${myProfile.id},user_b.eq.${myProfile.id}`),
     sb.from('friendships').select('*'),
     sb.from('blocks').select('blocked_id')
@@ -1962,11 +1967,38 @@ function setTab(tab){
   syncNav();
   renderFeed();
 }
+function lastDateOf(p){ return p.end_date || p.event_date || null; }
 function isPastPost(p){
-  if(!p.event_date) return false;
+  const ld = lastDateOf(p);
+  if(!ld) return false;
   const today = new Date(); today.setHours(0,0,0,0);
-  const d = new Date(p.event_date+'T00:00:00');
+  const d = new Date(ld+'T00:00:00');
   return d < today;
+}
+function urgencyForPost(p){
+  if(p.end_date && p.event_date){
+    const today = new Date(); today.setHours(0,0,0,0);
+    if(new Date(p.event_date+'T00:00:00') < today && new Date(p.end_date+'T00:00:00') >= today) return {text: t('urg_ongoing'), urgent:false};
+  }
+  return urgencyLabel(p.event_date);
+}
+function sortDateOf(p){
+  if(!p.event_date) return Infinity;
+  let ms = new Date(p.event_date).getTime();
+  if(p.end_date){
+    const today = new Date(); today.setHours(0,0,0,0);
+    if(ms < today.getTime()) ms = today.getTime();
+  }
+  return ms;
+}
+function postDateText(p, long){
+  if(!p.event_date) return t('urg_nodate');
+  const o1 = long ? {weekday:'long', day:'numeric', month:'long'} : {day:'numeric', month:'short'};
+  const o2 = long ? {day:'numeric', month:'long'} : {day:'numeric', month:'short'};
+  let txt = new Date(p.event_date+'T00:00:00').toLocaleDateString(langLocale(), o1);
+  if(p.end_date && p.end_date > p.event_date) txt += ' \u2013 ' + new Date(p.end_date+'T00:00:00').toLocaleDateString(langLocale(), o2);
+  if(p.event_time) txt += ' \u00b7 ' + p.event_time.slice(0,5);
+  return txt;
 }
 function spotsTakenFor(post){
   const set = cache.participantsByPost[post.id];
@@ -1983,7 +2015,7 @@ function getVisiblePosts(){
   } else if(state.activeFilter !== 'all' && state.tab==='home'){
     posts = posts.filter(p => (p.cats||[]).includes(state.activeFilter));
   }
-  posts.sort((a,b)=> (a.event_date ? new Date(a.event_date).getTime() : Infinity) - (b.event_date ? new Date(b.event_date).getTime() : Infinity));
+  posts.sort((a,b)=> sortDateOf(a) - sortDateOf(b));
   return posts;
 }
 function getHistoryPosts(){
@@ -1991,9 +2023,10 @@ function getHistoryPosts(){
   const today = new Date(); today.setHours(0,0,0,0);
   const weekAgo = new Date(today); weekAgo.setDate(weekAgo.getDate()-7);
   return cache.posts.filter(p=>{
-    if(!p.event_date) return false;
+    const ld = lastDateOf(p);
+    if(!ld) return false;
     if(!(p.creator_id===myProfile.id || isJoined(p))) return false;
-    const d = new Date(p.event_date+'T00:00:00');
+    const d = new Date(ld+'T00:00:00');
     return d < today && d >= weekAgo;
   }).sort((a,b)=> new Date(b.event_date+'T00:00:00') - new Date(a.event_date+'T00:00:00'));
 }
@@ -2095,14 +2128,14 @@ function renderFeed(){
   const historyHtml = state.tab === 'saved' ? renderHistoryBlock(history, posts.length > 0) : '';
   main.innerHTML = posts.map(p=>{
     const primaryCat = catById((p.cats||[])[0]);
-    const urg = urgencyLabel(p.event_date);
+    const urg = urgencyForPost(p);
     const spotsTaken = spotsTakenFor(p);
     const spotsLeft = p.spots_total - spotsTaken;
     const isFull = spotsLeft <= 0;
     const joined = isJoined(p);
     const isOwner = !!(myProfile && p.creator_id === myProfile.id);
     const creatorProfile = cache.profilesById[p.creator_id];
-    const dateFmt = p.event_date ? new Date(p.event_date+'T00:00:00').toLocaleDateString(langLocale(),{day:'numeric', month:'short'}) + (p.event_time ? ' · '+p.event_time.slice(0,5) : '') : t('urg_nodate');
+    const dateFmt = postDateText(p, false);
     const pills = (p.cats||[]).map(cid=>{
       const c = catById(cid);
       return `<span class="tagpill" style="--pillcolor:${c.color}">${catLabel(c)}</span>`;
@@ -2180,16 +2213,14 @@ async function renderPostDetail(){
   await Promise.all([ensureProfilesCached(ids.concat([p.creator_id])), loadReportData()]);
   if(postDetailId !== id) return;
   const primaryCat = catById((p.cats||[])[0]);
-  const urg = urgencyLabel(p.event_date);
+  const urg = urgencyForPost(p);
   const spotsTaken = spotsTakenFor(p);
   const spotsLeft = p.spots_total - spotsTaken;
   const isFull = spotsLeft <= 0;
   const joined = isJoined(p);
   const isOwner = !!(myProfile && p.creator_id === myProfile.id);
   const creator = cache.profilesById[p.creator_id];
-  const dateFmt = p.event_date
-    ? (new Date(p.event_date + 'T00:00:00').toLocaleDateString(langLocale(), {weekday:'long', day:'numeric', month:'long'}) + (p.event_time ? ' · ' + p.event_time.slice(0,5) : ''))
-    : t('urg_nodate');
+  const dateFmt = postDateText(p, true);
   const pills = (p.cats||[]).map(function(cid){
     const c = catById(cid);
     return '<span class="tagpill" style="--pillcolor:' + c.color + '">' + catLabel(c) + '</span>';
@@ -2364,6 +2395,7 @@ function openCreate(){
   document.getElementById('fTitle').value = '';
   document.getElementById('fDesc').value = '';
   document.getElementById('fDate').value = '';
+  document.getElementById('fEndDate').value = '';
   document.getElementById('fTime').value = '';
   document.getElementById('fLoc').value = '';
   document.getElementById('fMapLink').value = '';
@@ -2375,6 +2407,7 @@ function openCreate(){
 }
 function setFormMode(mode){
   formMode = mode;
+  document.getElementById('fEndWrap').style.display = mode === 'search' ? '' : 'none';
   document.getElementById('segSearch').classList.toggle('active', mode==='search');
   document.getElementById('segEvent').classList.toggle('active', mode==='event');
   document.getElementById('segLooking').classList.toggle('active', mode==='looking');
@@ -2427,6 +2460,8 @@ async function publishPost(){
     showToast(t('create_error_missing'), '', null);
     return;
   }
+  const endDate = formMode === 'search' ? document.getElementById('fEndDate').value : '';
+  if(endDate && (!date || endDate <= date)){ showToast(t('end_error'), '', null); return; }
   if(!date){
     const ok = await showConfirm(t('date_missing_title'), t('date_missing_msg'), t('date_missing_confirm'), t('date_missing_cancel'));
     if(!ok) return;
@@ -2437,6 +2472,7 @@ async function publishPost(){
     title,
     description: desc || '',
     event_date: date || null,
+    end_date: endDate || null,
     event_time: time || null,
     location: loc || '',
     map_link: mapLink || ''
@@ -2473,6 +2509,7 @@ function openEditPost(id){
   document.getElementById('fTitle').value = post.title;
   document.getElementById('fDesc').value = post.description || '';
   document.getElementById('fDate').value = post.event_date || '';
+  document.getElementById('fEndDate').value = post.end_date || '';
   document.getElementById('fTime').value = post.event_time ? post.event_time.slice(0,5) : '';
   document.getElementById('fLoc').value = post.location || '';
   document.getElementById('fMapLink').value = post.map_link || '';
