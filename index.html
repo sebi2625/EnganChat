@@ -1917,7 +1917,7 @@ function isJoined(post){
 function getVisiblePosts(){
   let posts = cache.posts.filter(p => !blockedIds.has(p.creator_id));
   if(state.tab === 'saved'){
-    posts = posts.filter(p => isJoined(p) && !isPastPost(p));
+    posts = posts.filter(p => (isJoined(p) || (myProfile && p.creator_id === myProfile.id)) && !isPastPost(p));
   } else if(state.activeFilter !== 'all' && state.tab==='home'){
     posts = posts.filter(p => (p.cats||[]).includes(state.activeFilter));
   }
