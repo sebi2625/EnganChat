@@ -164,7 +164,7 @@
   .navbtn{
     background:none; border:none; color:var(--muted);
     display:flex; flex-direction:column; align-items:center; gap:3px;
-    font-size:10.5px; font-weight:600; width:70px; position:relative;
+    font-size:10px; font-weight:600; width:64px; min-width:0; position:relative;
   }
   .navbtn svg{width:22px; height:22px;}
   .navbtn.active{color:var(--lime);}
@@ -376,6 +376,10 @@
     <button class="navbtn active" id="navHome" onclick="setTab('home')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"></path><path d="M5 10v10h14V10"></path></svg>
       <span data-i18n="nav_home">Inicio</span>
+    </button>
+    <button class="navbtn" id="navSearch" onclick="setTab('search')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4.3-4.3"></path></svg>
+      <span data-i18n="nav_search">Buscar</span>
     </button>
     <button class="navbtn" id="navSaved" onclick="setTab('saved')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
@@ -1041,7 +1045,7 @@ const TRANSLATIONS = {
     report_already:'Reportado ✓', report_error:'No se ha podido enviar el reporte',
     report_warning:'⚠ Acumula {n} reportes de otros usuarios',
     feedback_ph:'Cuéntanos qué mejorarías o qué falla...', feedback_send_btn:'Enviar',
-    feedback_thanks:'¡Gracias!', feedback_thanks_sub:'Hemos recibido tu mensaje.', blocked_chat_note:'Has bloqueado a este usuario. Desbloquéalo para volver a escribirle.', forgot_link:'¿Has olvidado tu contraseña?', reset_title:'Recuperar contraseña', reset_hint:'Te enviaremos un código al correo universitario que verificaste. Solo funciona si tu cuenta está verificada.', reset_send:'Enviar código', reset_sent:'Código enviado a tu correo universitario.', reset_newpass_ph:'Nueva contraseña (mín. 6 caracteres)', reset_confirm:'Cambiar contraseña', reset_ok:'Contraseña cambiada. Ya puedes entrar.', reset_err_not_verified:'Esta cuenta no tiene un correo universitario verificado, así que no se puede recuperar por aquí.', reset_err_weak_password:'La contraseña debe tener al menos 6 caracteres.', reset_err_bad_nickname:'Escribe tu nickname.', blocked_list_title:'Usuarios bloqueados', unblock_short:'Desbloquear', appeal_notice:'⚠ Tu perfil acumula {n} reportes de otros usuarios y los demás ven un aviso. Si crees que son falsos, puedes apelar.', appeal_btn:'Apelar los reportes', appeal_title:'Apelar los reportes', appeal_desc:'Revisaremos tu caso. Cuéntanos por qué crees que los reportes no son justos.', appeal_ph:'Explica por qué crees que los reportes no son justos...', appeal_send:'Enviar apelación', appeal_pending:'Apelación enviada. La revisaremos pronto.', appeal_thanks:'Apelación enviada', appeal_thanks_sub:'La revisaremos pronto.', appeal_error:'No se ha podido enviar la apelación', feedback_error:'No se ha podido enviar',
+    feedback_thanks:'¡Gracias!', feedback_thanks_sub:'Hemos recibido tu mensaje.', nav_search:'Buscar', search_ph:'Busca por nickname o universidad', search_origin_all:'Todos', search_recent:'Miembros recientes', search_results:'Resultados', search_none:'No hemos encontrado a nadie', search_more:'Ver más', blocked_chat_note:'Has bloqueado a este usuario. Desbloquéalo para volver a escribirle.', forgot_link:'¿Has olvidado tu contraseña?', reset_title:'Recuperar contraseña', reset_hint:'Te enviaremos un código al correo universitario que verificaste. Solo funciona si tu cuenta está verificada.', reset_send:'Enviar código', reset_sent:'Código enviado a tu correo universitario.', reset_newpass_ph:'Nueva contraseña (mín. 6 caracteres)', reset_confirm:'Cambiar contraseña', reset_ok:'Contraseña cambiada. Ya puedes entrar.', reset_err_not_verified:'Esta cuenta no tiene un correo universitario verificado, así que no se puede recuperar por aquí.', reset_err_weak_password:'La contraseña debe tener al menos 6 caracteres.', reset_err_bad_nickname:'Escribe tu nickname.', blocked_list_title:'Usuarios bloqueados', unblock_short:'Desbloquear', appeal_notice:'⚠ Tu perfil acumula {n} reportes de otros usuarios y los demás ven un aviso. Si crees que son falsos, puedes apelar.', appeal_btn:'Apelar los reportes', appeal_title:'Apelar los reportes', appeal_desc:'Revisaremos tu caso. Cuéntanos por qué crees que los reportes no son justos.', appeal_ph:'Explica por qué crees que los reportes no son justos...', appeal_send:'Enviar apelación', appeal_pending:'Apelación enviada. La revisaremos pronto.', appeal_thanks:'Apelación enviada', appeal_thanks_sub:'La revisaremos pronto.', appeal_error:'No se ha podido enviar la apelación', feedback_error:'No se ha podido enviar',
     post_see_people:'Ver apuntados ({n})', part_organizer:'Organiza', part_you:'tú',
     part_hint:'Toca a alguien para ver su perfil, escribirle o reportarlo.',
   },
@@ -1151,7 +1155,7 @@ const TRANSLATIONS = {
     report_already:'Reportat ✓', report_error:'No s\'ha pogut enviar el report',
     report_warning:'⚠ Acumula {n} reports d\'altres usuaris',
     feedback_ph:'Explica\'ns què milloraries o què falla...', feedback_send_btn:'Enviar',
-    feedback_thanks:'Gràcies!', feedback_thanks_sub:'Hem rebut el teu missatge.', blocked_chat_note:'Has bloquejat aquest usuari. Desbloqueja\'l per tornar-li a escriure.', forgot_link:'Has oblidat la contrasenya?', reset_title:'Recuperar contrasenya', reset_hint:'T\'enviarem un codi al correu universitari que vas verificar. Només funciona si el teu compte està verificat.', reset_send:'Envia el codi', reset_sent:'Codi enviat al teu correu universitari.', reset_newpass_ph:'Nova contrasenya (mín. 6 caràcters)', reset_confirm:'Canvia la contrasenya', reset_ok:'Contrasenya canviada. Ja pots entrar.', reset_err_not_verified:'Aquest compte no té un correu universitari verificat, així que no es pot recuperar per aquí.', reset_err_weak_password:'La contrasenya ha de tenir almenys 6 caràcters.', reset_err_bad_nickname:'Escriu el teu nickname.', blocked_list_title:'Usuaris bloquejats', unblock_short:'Desbloqueja', appeal_notice:'⚠ El teu perfil acumula {n} reports d\'altres usuaris i la resta veu un avís. Si creus que són falsos, pots apel·lar.', appeal_btn:'Apel·la els reports', appeal_title:'Apel·la els reports', appeal_desc:'Revisarem el teu cas. Explica\'ns per què creus que els reports no són justos.', appeal_ph:'Explica per què creus que els reports no són justos...', appeal_send:'Envia l\'apel·lació', appeal_pending:'Apel·lació enviada. La revisarem aviat.', appeal_thanks:'Apel·lació enviada', appeal_thanks_sub:'La revisarem aviat.', appeal_error:'No s\'ha pogut enviar l\'apel·lació', feedback_error:'No s\'ha pogut enviar',
+    feedback_thanks:'Gràcies!', feedback_thanks_sub:'Hem rebut el teu missatge.', nav_search:'Cerca', search_ph:'Cerca per nickname o universitat', search_origin_all:'Tots', search_recent:'Membres recents', search_results:'Resultats', search_none:'No hem trobat ningú', search_more:'Veure\'n més', blocked_chat_note:'Has bloquejat aquest usuari. Desbloqueja\'l per tornar-li a escriure.', forgot_link:'Has oblidat la contrasenya?', reset_title:'Recuperar contrasenya', reset_hint:'T\'enviarem un codi al correu universitari que vas verificar. Només funciona si el teu compte està verificat.', reset_send:'Envia el codi', reset_sent:'Codi enviat al teu correu universitari.', reset_newpass_ph:'Nova contrasenya (mín. 6 caràcters)', reset_confirm:'Canvia la contrasenya', reset_ok:'Contrasenya canviada. Ja pots entrar.', reset_err_not_verified:'Aquest compte no té un correu universitari verificat, així que no es pot recuperar per aquí.', reset_err_weak_password:'La contrasenya ha de tenir almenys 6 caràcters.', reset_err_bad_nickname:'Escriu el teu nickname.', blocked_list_title:'Usuaris bloquejats', unblock_short:'Desbloqueja', appeal_notice:'⚠ El teu perfil acumula {n} reports d\'altres usuaris i la resta veu un avís. Si creus que són falsos, pots apel·lar.', appeal_btn:'Apel·la els reports', appeal_title:'Apel·la els reports', appeal_desc:'Revisarem el teu cas. Explica\'ns per què creus que els reports no són justos.', appeal_ph:'Explica per què creus que els reports no són justos...', appeal_send:'Envia l\'apel·lació', appeal_pending:'Apel·lació enviada. La revisarem aviat.', appeal_thanks:'Apel·lació enviada', appeal_thanks_sub:'La revisarem aviat.', appeal_error:'No s\'ha pogut enviar l\'apel·lació', feedback_error:'No s\'ha pogut enviar',
     post_see_people:'Veure apuntats ({n})', part_organizer:'Organitza', part_you:'tu',
     part_hint:'Toca algú per veure el seu perfil, escriure-li o reportar-lo.',
   },
@@ -1261,7 +1265,7 @@ const TRANSLATIONS = {
     report_already:'Reported ✓', report_error:'Couldn\'t send the report',
     report_warning:'⚠ Has {n} reports from other users',
     feedback_ph:'Tell us what you\'d improve or what\'s broken...', feedback_send_btn:'Send',
-    feedback_thanks:'Thank you!', feedback_thanks_sub:'We\'ve received your message.', blocked_chat_note:'You blocked this user. Unblock them to write again.', forgot_link:'Forgot your password?', reset_title:'Reset password', reset_hint:'We\'ll send a code to the university email you verified. It only works if your account is verified.', reset_send:'Send code', reset_sent:'Code sent to your university email.', reset_newpass_ph:'New password (min. 6 characters)', reset_confirm:'Change password', reset_ok:'Password changed. You can sign in now.', reset_err_not_verified:'This account has no verified university email, so it can\'t be recovered here.', reset_err_weak_password:'Password must be at least 6 characters.', reset_err_bad_nickname:'Enter your nickname.', blocked_list_title:'Blocked users', unblock_short:'Unblock', appeal_notice:'⚠ Your profile has {n} reports from other users and others see a warning. If you think they are false, you can appeal.', appeal_btn:'Appeal the reports', appeal_title:'Appeal the reports', appeal_desc:'We will review your case. Tell us why you think the reports are unfair.', appeal_ph:'Explain why you think the reports are unfair...', appeal_send:'Send appeal', appeal_pending:'Appeal sent. We will review it soon.', appeal_thanks:'Appeal sent', appeal_thanks_sub:'We will review it soon.', appeal_error:'Couldn\'t send the appeal', feedback_error:'Couldn\'t send it',
+    feedback_thanks:'Thank you!', feedback_thanks_sub:'We\'ve received your message.', nav_search:'Search', search_ph:'Search by nickname or university', search_origin_all:'All', search_recent:'Recent members', search_results:'Results', search_none:'We couldn\'t find anyone', search_more:'Show more', blocked_chat_note:'You blocked this user. Unblock them to write again.', forgot_link:'Forgot your password?', reset_title:'Reset password', reset_hint:'We\'ll send a code to the university email you verified. It only works if your account is verified.', reset_send:'Send code', reset_sent:'Code sent to your university email.', reset_newpass_ph:'New password (min. 6 characters)', reset_confirm:'Change password', reset_ok:'Password changed. You can sign in now.', reset_err_not_verified:'This account has no verified university email, so it can\'t be recovered here.', reset_err_weak_password:'Password must be at least 6 characters.', reset_err_bad_nickname:'Enter your nickname.', blocked_list_title:'Blocked users', unblock_short:'Unblock', appeal_notice:'⚠ Your profile has {n} reports from other users and others see a warning. If you think they are false, you can appeal.', appeal_btn:'Appeal the reports', appeal_title:'Appeal the reports', appeal_desc:'We will review your case. Tell us why you think the reports are unfair.', appeal_ph:'Explain why you think the reports are unfair...', appeal_send:'Send appeal', appeal_pending:'Appeal sent. We will review it soon.', appeal_thanks:'Appeal sent', appeal_thanks_sub:'We will review it soon.', appeal_error:'Couldn\'t send the appeal', feedback_error:'Couldn\'t send it',
     post_see_people:'See who joined ({n})', part_organizer:'Organiser', part_you:'you',
     part_hint:'Tap someone to view their profile, message or report them.',
   }
@@ -1612,6 +1616,7 @@ async function refreshFriendships(){
   knownPendingIds = new Set(pendingReceivedRequests().map(r=>r.id));
   updateChatsDot();
   if(state.tab === 'chats') renderFeed();
+  else if(state.tab === 'search') renderSearchResults();
 }
 function updateChatsDot(){
   if(!myProfile) return;
@@ -1862,8 +1867,9 @@ function setFilter(id){
 function setTab(tab){
   state.tab = tab;
   saveUiPrefs();
-  ['navHome','navSaved','navChats'].forEach(id=>document.getElementById(id).classList.remove('active'));
+  ['navHome','navSearch','navSaved','navChats'].forEach(id=>document.getElementById(id).classList.remove('active'));
   if(tab==='home') document.getElementById('navHome').classList.add('active');
+  if(tab==='search') document.getElementById('navSearch').classList.add('active');
   if(tab==='saved') document.getElementById('navSaved').classList.add('active');
   if(tab==='chats') document.getElementById('navChats').classList.add('active');
   renderFeed();
@@ -1981,6 +1987,10 @@ function renderHistoryBlock(history, showEmptyHint){
 function renderFeed(){
   document.getElementById('chiprow').style.display = state.tab==='home' ? 'flex' : 'none';
   if(state.tab === 'chats'){ renderChatsList(); return; }
+  if(state.tab === 'search'){
+    if(document.getElementById('userSearchInput')) renderSearchResults(); else mountSearchTab();
+    return;
+  }
   const main = document.getElementById('mainFeed');
   if(!myProfile){ main.innerHTML = ''; return; }
   const posts = getVisiblePosts();
@@ -2089,6 +2099,100 @@ function safeImg(u){
   if(typeof u !== 'string' || !u) return '';
   if(/^data:image\/(png|jpe?g|webp|gif);base64,[A-Za-z0-9+\/=]+$/.test(u)) return u;
   return /^https:\/\//i.test(u) ? u : '';
+}
+
+/* ================= USER SEARCH ================= */
+let searchState = {q:'', sport:'', origin:'all', verified:false, limit:20};
+let searchIds = [];
+let searchHasMore = false;
+let searchSeq = 0;
+let searchTimer = null;
+function mountSearchTab(){
+  const main = document.getElementById('mainFeed');
+  main.innerHTML = '<div class="field" style="margin-bottom:10px;"><input type="text" id="userSearchInput" maxlength="30" placeholder="' + escapeAttr(t('search_ph')) + '" autocapitalize="off" value="' + escapeAttr(searchState.q) + '" oninput="onUserSearchInput()"></div>' +
+    '<div id="searchFilters"></div><div id="searchResults"></div>';
+  renderSearchFilters();
+  searchUsers();
+}
+function chipBtn(label, active, onclick){
+  return '<button class="chip' + (active ? ' active' : '') + '" onclick="' + onclick + '">' + label + '</button>';
+}
+function renderSearchFilters(){
+  const el = document.getElementById('searchFilters');
+  if(!el) return;
+  const st = searchState;
+  const sports = chipBtn(t('filter_all'), !st.sport, "setSearchSport('')") +
+    CATEGORIES.filter(c => c.group === 'sport').map(c => chipBtn(catLabel(c), st.sport === c.id, "setSearchSport('" + c.id + "')")).join('');
+  const more = chipBtn(t('search_origin_all'), st.origin === 'all', "setSearchOrigin('all')") +
+    chipBtn(t('origin_local'), st.origin === 'local', "setSearchOrigin('local')") +
+    chipBtn(t('origin_intl'), st.origin === 'intl', "setSearchOrigin('intl')") +
+    chipBtn('&#10003; ' + t('ver_badge'), st.verified, "toggleSearchVerified()");
+  el.innerHTML = '<div class="chiprow" style="display:flex; padding-left:0; padding-right:0;">' + sports + '</div>' +
+    '<div class="chiprow" style="display:flex; padding-left:0; padding-right:0; margin-bottom:6px;">' + more + '</div>';
+}
+function onUserSearchInput(){
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(function(){
+    searchState.q = document.getElementById('userSearchInput').value;
+    searchState.limit = 20;
+    searchUsers();
+  }, 300);
+}
+function setSearchSport(id){ searchState.sport = id; searchState.limit = 20; renderSearchFilters(); searchUsers(); }
+function setSearchOrigin(o){ searchState.origin = o; searchState.limit = 20; renderSearchFilters(); searchUsers(); }
+function toggleSearchVerified(){ searchState.verified = !searchState.verified; searchState.limit = 20; renderSearchFilters(); searchUsers(); }
+function searchMore(){ searchState.limit += 20; searchUsers(); }
+async function searchUsers(){
+  if(!myProfile) return;
+  const seq = ++searchSeq;
+  const st = searchState;
+  const term = normalizeNickname(st.q);
+  let q = sb.from('profiles').select('*').neq('id', myProfile.id);
+  if(term) q = q.or('nickname.ilike.%' + term + '%,uni.ilike.%' + term + '%');
+  if(st.sport) q = q.contains('sports', [st.sport]);
+  if(st.origin !== 'all') q = q.eq('origin', st.origin);
+  if(st.verified) q = q.not('verified_at', 'is', null);
+  const {data} = await q.order('created_at', {ascending:false}).limit(st.limit + 1);
+  if(seq !== searchSeq) return;
+  const raw = data || [];
+  searchHasMore = raw.length > st.limit;
+  const rows = raw.slice(0, st.limit).filter(pr => !blockedIds.has(pr.id));
+  rows.forEach(pr => { cache.profilesById[pr.id] = pr; });
+  searchIds = rows.map(pr => pr.id);
+  renderSearchResults();
+}
+function searchRowHtml(uid){
+  const u = cache.profilesById[uid] || {};
+  const name = dn(u);
+  const img = safeImg(u.photo_url);
+  const avatarInner = img ? ('<img src="' + escapeAttr(img) + '" style="width:100%;height:100%;object-fit:cover;">') : escapeHtml(name.charAt(0).toUpperCase());
+  const sub = [u.origin === 'intl' ? t('origin_intl') : t('origin_local'), u.uni || ''].filter(Boolean).join(' \u00b7 ');
+  const sp = (u.sports || []).slice(0, 3).map(function(x){ return '<span class="microchip">' + catLabel(catById(x)) + '</span>'; }).join('');
+  const stt = friendStatusWith(uid);
+  let action;
+  if(stt.status === 'accepted') action = '<span class="joinbtn joined" style="padding:6px 12px;">' + t('friend_friends_badge') + '</span>';
+  else if(stt.status === 'pending_sent') action = '<button class="joinbtn" style="padding:6px 12px;" onclick="cancelFriendRequest(\'' + stt.row.id + '\')">' + t('friend_pending') + ' \u2715</button>';
+  else if(stt.status === 'pending_received') action = '<button class="joinbtn joined" style="padding:6px 12px;" onclick="respondFriendRequest(\'' + stt.row.id + '\', true)">' + t('friend_accept') + '</button>';
+  else action = '<button class="joinbtn" style="padding:6px 12px;" onclick="sendFriendRequest(\'' + uid + '\')">' + t('friend_add') + '</button>';
+  return '<div class="chatlist-row" style="cursor:pointer;" onclick="openUserCard(\'' + uid + '\')">' +
+    '<div class="chatlist-avatar" style="background:var(--surface-2); color:var(--lime); overflow:hidden;">' + avatarInner + '</div>' +
+    '<div class="chatlist-main"><div class="chatlist-title">' + escapeHtml(name) + vmark(u) + '</div>' +
+    '<div class="chatlist-preview">' + escapeHtml(sub) + '</div>' +
+    (sp ? '<div class="chipwrap" style="justify-content:flex-start; margin-top:4px;">' + sp + '</div>' : '') + '</div>' +
+    '<div style="flex:0 0 auto;" onclick="event.stopPropagation()">' + action + '</div></div>';
+}
+function renderSearchResults(){
+  const el = document.getElementById('searchResults');
+  if(!el) return;
+  const st = searchState;
+  const filtered = normalizeNickname(st.q) || st.sport || st.origin !== 'all' || st.verified;
+  if(searchIds.length === 0){
+    el.innerHTML = '<div class="empty"><b>' + t('search_none') + '</b></div>';
+    return;
+  }
+  el.innerHTML = '<div style="font-size:12.5px; font-weight:700; color:var(--muted); margin:10px 0 6px;">' + t(filtered ? 'search_results' : 'search_recent') + '</div>' +
+    searchIds.map(searchRowHtml).join('') +
+    (searchHasMore ? '<button class="secondary-btn" onclick="searchMore()">' + t('search_more') + '</button>' : '');
 }
 
 /* ================= CREATE FLOW ================= */
