@@ -96,6 +96,15 @@
     overflow:hidden; padding:0;
   }
   .avatar-btn img{width:100%; height:100%; object-fit:cover;}
+  :root[data-theme="navy"] header.top, :root[data-theme="green"] header.top, :root[data-theme="orange"] header.top{
+    background:var(--lime); border-bottom:none;
+  }
+  :root[data-theme="navy"] .wordmark, :root[data-theme="green"] .wordmark, :root[data-theme="orange"] .wordmark{color:#FFFFFF;}
+  :root[data-theme="navy"] .wordmark span, :root[data-theme="green"] .wordmark span, :root[data-theme="orange"] .wordmark span{color:rgba(255,255,255,0.72);}
+  :root[data-theme="navy"] .tagline, :root[data-theme="green"] .tagline, :root[data-theme="orange"] .tagline{color:rgba(255,255,255,0.82);}
+  :root[data-theme="navy"] .avatar-btn, :root[data-theme="green"] .avatar-btn, :root[data-theme="orange"] .avatar-btn{
+    background:rgba(255,255,255,0.18); border-color:rgba(255,255,255,0.45); color:#FFFFFF;
+  }
 
   .chiprow{
     display:flex; gap:8px; overflow-x:auto; padding:12px 18px 0;
@@ -2839,9 +2848,24 @@ let profileEditing = false;
 let editSelectedSports = new Set();
 let editPhotoData = null;
 
-const THEME_META = {dark:'#0F1B2B', navy:'#F3F6FB', green:'#F3F8F4', orange:'#FBF6F2'};
+const THEME_META = {dark:'#0F1B2B', navy:'#1E3A8A', green:'#15803D', orange:'#E8590C'};
 function currentTheme(){ return document.documentElement.getAttribute('data-theme') || 'dark'; }
+let themeOpen = false;
+const THEME_LIST = [['dark','#C6F135','#0F1B2B','theme_night'],['navy','#1E3A8A','#FFFFFF','theme_navy'],['green','#15803D','#FFFFFF','theme_green'],['orange','#E8590C','#FFFFFF','theme_orange']];
+function themeSwatch(x){ return '<span style="width:14px;height:14px;border-radius:50%;background:' + x[1] + ';border:2px solid ' + x[2] + ';box-shadow:0 0 0 1px var(--line);flex:0 0 auto;"></span>'; }
+function toggleThemeMenu(){ themeOpen = !themeOpen; renderProfile(); }
+function themeMenuHtml(){
+  const cur = THEME_LIST.filter(function(x){ return x[0] === currentTheme(); })[0] || THEME_LIST[0];
+  let h = '<button type="button" class="segbtn" style="display:flex; align-items:center; justify-content:space-between; width:100%; gap:8px; text-align:left;" onclick="toggleThemeMenu()"><span style="display:flex; align-items:center; gap:8px;">' + themeSwatch(cur) + t(cur[3]) + '</span><span>' + (themeOpen ? '&#9652;' : '&#9662;') + '</span></button>';
+  if(themeOpen){
+    h += '<div style="display:flex; flex-direction:column; gap:6px; margin-top:8px;">' + THEME_LIST.map(function(x){
+      return '<button type="button" class="segbtn ' + (x[0] === cur[0] ? 'active' : '') + '" style="display:flex; align-items:center; gap:8px; width:100%;" onclick="setTheme(\'' + x[0] + '\')">' + themeSwatch(x) + t(x[3]) + '</button>';
+    }).join('') + '</div>';
+  }
+  return h;
+}
 function setTheme(id){
+  themeOpen = false;
   if(!THEME_META[id]) id = 'dark';
   if(id === 'dark') document.documentElement.removeAttribute('data-theme'); else document.documentElement.setAttribute('data-theme', id);
   try{ localStorage.setItem('enganchat_theme', id === 'dark' ? '' : id); }catch(e){}
@@ -2919,11 +2943,7 @@ function renderProfile(){
     </div>
     <div class="field" style="margin-top:20px;">
       <label>${t('theme_label')}</label>
-      <div class="segrow" style="flex-wrap:wrap;">
-        ${[['dark','#C6F135','#0F1B2B','theme_night'],['navy','#1E3A8A','#FFFFFF','theme_navy'],['green','#15803D','#FFFFFF','theme_green'],['orange','#E8590C','#FFFFFF','theme_orange']].map(function(x){
-          return '<button type="button" class="segbtn ' + (currentTheme()===x[0]?'active':'') + '" style="display:flex; align-items:center; justify-content:center; gap:8px;" onclick="setTheme(\'' + x[0] + '\')"><span style="width:14px;height:14px;border-radius:50%;background:' + x[1] + ';border:2px solid ' + x[2] + ';box-shadow:0 0 0 1px var(--line);"></span>' + t(x[3]) + '</button>';
-        }).join('')}
-      </div>
+      ${themeMenuHtml()}
     </div>
     <div class="field">
       <label>${t('app_lang_label')}</label>
