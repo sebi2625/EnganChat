@@ -273,6 +273,20 @@
   }
   .primary-btn:disabled{opacity:0.4;}
   .hint{font-size:12px; color:var(--muted); margin-top:6px; line-height:1.4;}
+  .field input[type=time], .field input[type=url]{width:100%; background:var(--surface); border:1px solid var(--line); color:var(--text); padding:12px 13px; border-radius:10px; font-size:14.5px; font-family:inherit;}
+  .courtbox{margin-top:18px; padding:14px; border-radius:14px; border:1px solid var(--line); background:var(--surface);}
+  .courtbox.ok{border-color:var(--lime);}
+  .courtbox .ct{font-size:12px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); margin-bottom:6px;}
+  .courtbox .cn{font-weight:700; font-size:16px; margin-bottom:6px;}
+  .courtcheck{display:flex; align-items:center; gap:10px; width:100%; margin-top:12px; padding:12px; border-radius:10px; border:1px solid var(--line); background:var(--surface-2); color:var(--text); font-size:14.5px; font-weight:600; text-align:left;}
+  .courtcheck .bx{width:22px; height:22px; border-radius:6px; border:2px solid var(--muted); display:flex; align-items:center; justify-content:center; font-size:14px; line-height:1; flex:0 0 auto;}
+  .courtcheck.on .bx{background:var(--lime); border-color:var(--lime); color:var(--on-accent);}
+  .venuecard{padding:14px 2px; border-bottom:1px solid var(--line);}
+  .venuecard .vn{font-weight:700; font-size:15px;}
+  .venuecard .va{font-size:12.5px; color:var(--muted); margin:3px 0 10px;}
+  .venuecard .vbtns{display:flex; flex-wrap:wrap; gap:8px;}
+  .vbtn{padding:8px 12px; border-radius:100px; border:1px solid var(--line); background:var(--surface-2); color:var(--text); font-size:13px; font-weight:600; text-decoration:none;}
+  .vbtn.main{background:var(--lime); color:var(--on-accent); border-color:var(--lime);}
   .badge-verified{
     display:inline-flex; align-items:center; gap:5px; font-size:11.5px; font-weight:700;
     color:var(--lime); background:var(--tint); padding:4px 10px; border-radius:100px; margin-top:6px;
@@ -454,6 +468,40 @@
       <div style="width:34px;"></div>
     </div>
     <div class="screen-body" id="postDetailBody"></div>
+  </div>
+
+  <div class="screen" id="venueScreen">
+    <div class="screen-header">
+      <button class="iconbtn" onclick="closeScreen('venueScreen')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+      </button>
+      <h3 data-i18n="venue_title">Pistas y clubs</h3>
+      <div style="width:34px;"></div>
+    </div>
+    <div class="screen-body">
+      <div class="field" style="margin-bottom:12px;"><input type="text" id="venueQ" maxlength="60" data-i18n-ph="venue_search_ph" placeholder="Busca por nombre o zona" oninput="venueFilter.q=this.value; renderVenueList()"></div>
+      <div class="chiprow" id="venueSportChips" style="margin-bottom:8px;"></div>
+      <div class="chiprow" id="venueMuniChips" style="margin-bottom:6px;"></div>
+      <div class="hint" data-i18n="venue_disclaimer">Datos de fuentes públicas; pueden estar desactualizados. Confirma siempre con el centro.</div>
+      <div id="venueList"></div>
+    </div>
+  </div>
+
+  <div class="screen" id="courtScreen">
+    <div class="screen-header">
+      <button class="iconbtn" onclick="closeScreen('courtScreen')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+      </button>
+      <h3 data-i18n="court_form_title">Confirmar pista</h3>
+      <div style="width:34px;"></div>
+    </div>
+    <div class="screen-body">
+      <div class="field"><label data-i18n="court_name_label">Nombre del club o pista</label><input type="text" id="cName" maxlength="100" data-i18n-ph="court_name_ph" placeholder="Ej: Club Pàdel X"></div>
+      <div class="field"><label data-i18n="court_link_label">Enlace de reserva (opcional)</label><input type="url" id="cLink" maxlength="300" placeholder="https://"></div>
+      <div class="field"><label data-i18n="court_date_label">Fecha</label><input type="date" id="cDate"></div>
+      <div class="field"><label data-i18n="court_time_label">Hora</label><input type="time" id="cTime"></div>
+      <button class="primary-btn" onclick="saveCourt()" data-i18n="court_save">Confirmar pista</button>
+    </div>
   </div>
 
   <div class="screen" id="createScreen">
@@ -1110,7 +1158,7 @@ const TRANSLATIONS = {
     report_already:'Reportado ✓', report_error:'No se ha podido enviar el reporte',
     report_warning:'⚠ Acumula {n} reportes de otros usuarios',
     feedback_ph:'Cuéntanos qué mejorarías o qué falla...', feedback_send_btn:'Enviar',
-    feedback_thanks:'¡Gracias!', feedback_thanks_sub:'Hemos recibido tu mensaje.', bio_label:'Bio', bio_ph:'Cuenta algo sobre ti (máx. 120 caracteres)', theme_label:'Estilo de la app', push_label:'Notificaciones', pd_title:'Plan', pd_when:'Cuándo', pd_where:'Dónde', pd_spots:'Plazas', pd_desc:'Descripción', pd_nodesc:'Sin descripción', pd_people:'Participantes', pd_chat:'Abrir chat del plan', pd_organizer_by:'Organiza', del_btn_profile:'Eliminar mi cuenta', del_title:'¿Eliminar tu cuenta?', del_msg:'Se borrarán de forma permanente tu perfil, tus planes, tus mensajes y tus amistades. Esta acción no se puede deshacer.', del_btn:'Continuar', del_title2:'Última confirmación', del_msg2:'¿Seguro que quieres eliminar tu cuenta para siempre?', del_btn2:'Eliminar para siempre', del_error:'No se ha podido eliminar la cuenta', push_on_btn:'Activar notificaciones', push_off_btn:'Notificaciones activadas · Desactivar', push_denied:'Has bloqueado las notificaciones en este navegador. Actívalas en los ajustes del sitio.', push_unsupported:'Para recibir notificaciones en iPhone, instala primero la app: Compartir → Añadir a pantalla de inicio.', push_error:'No se han podido activar las notificaciones', push_enabled:'Notificaciones activadas', theme_night:'Noche', theme_navy:'Blanco y azul', theme_green:'Blanco y verde', theme_orange:'Blanco y naranja', filter_btn:'Filtro', nav_search:'Buscar', search_ph:'Busca por nickname', search_recent:'Recientes', search_suggested:'Sugerencias para ti', search_none:'No hemos encontrado a nadie', blocked_chat_note:'Has bloqueado a este usuario. Desbloquéalo para volver a escribirle.', forgot_link:'¿Has olvidado tu contraseña?', reset_title:'Recuperar contraseña', reset_hint:'Te enviaremos un código al correo universitario que verificaste. Solo funciona si tu cuenta está verificada.', reset_send:'Enviar código', reset_sent:'Código enviado a tu correo universitario.', reset_newpass_ph:'Nueva contraseña (mín. 6 caracteres)', reset_confirm:'Cambiar contraseña', reset_ok:'Contraseña cambiada. Ya puedes entrar.', reset_err_not_verified:'Esta cuenta no tiene un correo universitario verificado, así que no se puede recuperar por aquí.', reset_err_weak_password:'La contraseña debe tener al menos 6 caracteres.', reset_err_bad_nickname:'Escribe tu nickname.', blocked_list_title:'Usuarios bloqueados', unblock_short:'Desbloquear', appeal_notice:'⚠ Tu perfil acumula {n} reportes de otros usuarios y los demás ven un aviso. Si crees que son falsos, puedes apelar.', appeal_btn:'Apelar los reportes', appeal_title:'Apelar los reportes', appeal_desc:'Revisaremos tu caso. Cuéntanos por qué crees que los reportes no son justos.', appeal_ph:'Explica por qué crees que los reportes no son justos...', appeal_send:'Enviar apelación', appeal_pending:'Apelación enviada. La revisaremos pronto.', appeal_thanks:'Apelación enviada', appeal_thanks_sub:'La revisaremos pronto.', appeal_error:'No se ha podido enviar la apelación', feedback_error:'No se ha podido enviar',
+    feedback_thanks:'¡Gracias!', feedback_thanks_sub:'Hemos recibido tu mensaje.', bio_label:'Bio', bio_ph:'Cuenta algo sobre ti (máx. 120 caracteres)', theme_label:'Estilo de la app', push_label:'Notificaciones', pd_title:'Plan', pd_when:'Cuándo', pd_where:'Dónde', pd_spots:'Plazas', pd_desc:'Descripción', pd_nodesc:'Sin descripción', pd_people:'Participantes', pd_chat:'Abrir chat del plan', pd_organizer_by:'Organiza', court_badge:'Pista reservada', court_section:'Pista', court_nocourt:'Completo · todavía sin pista', court_hint_full:'¡Ya sois suficientes! Busca una pista y confírmala aquí para avisar a todos.', court_find:'Encontrar pista', court_check:'Pista confirmada', court_edit:'Editar datos', court_book:'Reservar / ver web', court_wait:'El organizador está buscando pista.', venue_title:'Pistas y clubs', venue_search_ph:'Busca por nombre o zona', venue_all:'Todos', venue_none:'No hay resultados', venue_call:'Llamar', venue_wa:'WhatsApp', venue_web:'Web / reservas', venue_map:'Mapa', venue_use:'Usar para confirmar', venue_nophone:'Sin teléfono publicado', venue_disclaimer:'Datos de fuentes públicas; pueden estar desactualizados. Confirma siempre con el centro.', court_form_title:'Confirmar pista', court_name_label:'Nombre del club o pista', court_name_ph:'Ej: Club Pàdel X', court_link_label:'Enlace de reserva (opcional)', court_date_label:'Fecha', court_time_label:'Hora', court_save:'Confirmar pista', court_save_err:'No se ha podido guardar', court_name_req:'Escribe el nombre del sitio', court_saved:'Pista confirmada. Avisamos a los participantes.', court_remove_title:'¿Quitar la confirmación?', court_remove_msg:'El plan volverá a mostrarse sin pista reservada.', court_remove_btn:'Quitar', sys_court:'{name} ha confirmado pista: {court}.', del_btn_profile:'Eliminar mi cuenta', del_title:'¿Eliminar tu cuenta?', del_msg:'Se borrarán de forma permanente tu perfil, tus planes, tus mensajes y tus amistades. Esta acción no se puede deshacer.', del_btn:'Continuar', del_title2:'Última confirmación', del_msg2:'¿Seguro que quieres eliminar tu cuenta para siempre?', del_btn2:'Eliminar para siempre', del_error:'No se ha podido eliminar la cuenta', push_on_btn:'Activar notificaciones', push_off_btn:'Notificaciones activadas · Desactivar', push_denied:'Has bloqueado las notificaciones en este navegador. Actívalas en los ajustes del sitio.', push_unsupported:'Para recibir notificaciones en iPhone, instala primero la app: Compartir → Añadir a pantalla de inicio.', push_error:'No se han podido activar las notificaciones', push_enabled:'Notificaciones activadas', theme_night:'Noche', theme_navy:'Blanco y azul', theme_green:'Blanco y verde', theme_orange:'Blanco y naranja', filter_btn:'Filtro', nav_search:'Buscar', search_ph:'Busca por nickname', search_recent:'Recientes', search_suggested:'Sugerencias para ti', search_none:'No hemos encontrado a nadie', blocked_chat_note:'Has bloqueado a este usuario. Desbloquéalo para volver a escribirle.', forgot_link:'¿Has olvidado tu contraseña?', reset_title:'Recuperar contraseña', reset_hint:'Te enviaremos un código al correo universitario que verificaste. Solo funciona si tu cuenta está verificada.', reset_send:'Enviar código', reset_sent:'Código enviado a tu correo universitario.', reset_newpass_ph:'Nueva contraseña (mín. 6 caracteres)', reset_confirm:'Cambiar contraseña', reset_ok:'Contraseña cambiada. Ya puedes entrar.', reset_err_not_verified:'Esta cuenta no tiene un correo universitario verificado, así que no se puede recuperar por aquí.', reset_err_weak_password:'La contraseña debe tener al menos 6 caracteres.', reset_err_bad_nickname:'Escribe tu nickname.', blocked_list_title:'Usuarios bloqueados', unblock_short:'Desbloquear', appeal_notice:'⚠ Tu perfil acumula {n} reportes de otros usuarios y los demás ven un aviso. Si crees que son falsos, puedes apelar.', appeal_btn:'Apelar los reportes', appeal_title:'Apelar los reportes', appeal_desc:'Revisaremos tu caso. Cuéntanos por qué crees que los reportes no son justos.', appeal_ph:'Explica por qué crees que los reportes no son justos...', appeal_send:'Enviar apelación', appeal_pending:'Apelación enviada. La revisaremos pronto.', appeal_thanks:'Apelación enviada', appeal_thanks_sub:'La revisaremos pronto.', appeal_error:'No se ha podido enviar la apelación', feedback_error:'No se ha podido enviar',
     post_see_people:'Ver apuntados ({n})', part_organizer:'Organiza', part_you:'tú',
     part_hint:'Toca a alguien para ver su perfil, escribirle o reportarlo.',
   },
@@ -1220,7 +1268,7 @@ const TRANSLATIONS = {
     report_already:'Reportat ✓', report_error:'No s\'ha pogut enviar el report',
     report_warning:'⚠ Acumula {n} reports d\'altres usuaris',
     feedback_ph:'Explica\'ns què milloraries o què falla...', feedback_send_btn:'Enviar',
-    feedback_thanks:'Gràcies!', feedback_thanks_sub:'Hem rebut el teu missatge.', bio_label:'Bio', bio_ph:'Explica alguna cosa sobre tu (màx. 120 caràcters)', theme_label:'Estil de l\'app', push_label:'Notificacions', pd_title:'Pla', pd_when:'Quan', pd_where:'On', pd_spots:'Places', pd_desc:'Descripció', pd_nodesc:'Sense descripció', pd_people:'Participants', pd_chat:'Obre el xat del pla', pd_organizer_by:'Organitza', del_btn_profile:'Elimina el meu compte', del_title:'Vols eliminar el teu compte?', del_msg:'S\'esborraran de manera permanent el teu perfil, els teus plans, els teus missatges i les teves amistats. Aquesta acció no es pot desfer.', del_btn:'Continua', del_title2:'Última confirmació', del_msg2:'Segur que vols eliminar el teu compte per sempre?', del_btn2:'Elimina per sempre', del_error:'No s\'ha pogut eliminar el compte', push_on_btn:'Activa les notificacions', push_off_btn:'Notificacions activades · Desactiva', push_denied:'Has bloquejat les notificacions en aquest navegador. Activa-les als ajustos del lloc.', push_unsupported:'Per rebre notificacions a l\'iPhone, instal·la primer l\'app: Compartir → Afegir a la pantalla d\'inici.', push_error:'No s\'han pogut activar les notificacions', push_enabled:'Notificacions activades', theme_night:'Nit', theme_navy:'Blanc i blau', theme_green:'Blanc i verd', theme_orange:'Blanc i taronja', filter_btn:'Filtre', nav_search:'Cerca', search_ph:'Cerca per nickname', search_recent:'Recents', search_suggested:'Suggeriments per a tu', search_none:'No hem trobat ningú', blocked_chat_note:'Has bloquejat aquest usuari. Desbloqueja\'l per tornar-li a escriure.', forgot_link:'Has oblidat la contrasenya?', reset_title:'Recuperar contrasenya', reset_hint:'T\'enviarem un codi al correu universitari que vas verificar. Només funciona si el teu compte està verificat.', reset_send:'Envia el codi', reset_sent:'Codi enviat al teu correu universitari.', reset_newpass_ph:'Nova contrasenya (mín. 6 caràcters)', reset_confirm:'Canvia la contrasenya', reset_ok:'Contrasenya canviada. Ja pots entrar.', reset_err_not_verified:'Aquest compte no té un correu universitari verificat, així que no es pot recuperar per aquí.', reset_err_weak_password:'La contrasenya ha de tenir almenys 6 caràcters.', reset_err_bad_nickname:'Escriu el teu nickname.', blocked_list_title:'Usuaris bloquejats', unblock_short:'Desbloqueja', appeal_notice:'⚠ El teu perfil acumula {n} reports d\'altres usuaris i la resta veu un avís. Si creus que són falsos, pots apel·lar.', appeal_btn:'Apel·la els reports', appeal_title:'Apel·la els reports', appeal_desc:'Revisarem el teu cas. Explica\'ns per què creus que els reports no són justos.', appeal_ph:'Explica per què creus que els reports no són justos...', appeal_send:'Envia l\'apel·lació', appeal_pending:'Apel·lació enviada. La revisarem aviat.', appeal_thanks:'Apel·lació enviada', appeal_thanks_sub:'La revisarem aviat.', appeal_error:'No s\'ha pogut enviar l\'apel·lació', feedback_error:'No s\'ha pogut enviar',
+    feedback_thanks:'Gràcies!', feedback_thanks_sub:'Hem rebut el teu missatge.', bio_label:'Bio', bio_ph:'Explica alguna cosa sobre tu (màx. 120 caràcters)', theme_label:'Estil de l\'app', push_label:'Notificacions', pd_title:'Pla', pd_when:'Quan', pd_where:'On', pd_spots:'Places', pd_desc:'Descripció', pd_nodesc:'Sense descripció', pd_people:'Participants', pd_chat:'Obre el xat del pla', pd_organizer_by:'Organitza', court_badge:'Pista reservada', court_section:'Pista', court_nocourt:'Complet · encara sense pista', court_hint_full:'Ja sou prou! Busca una pista i confirma-la aquí per avisar tothom.', court_find:'Troba pista', court_check:'Pista confirmada', court_edit:'Edita les dades', court_book:'Reserva / mira la web', court_wait:'L\'organitzador està buscant pista.', venue_title:'Pistes i clubs', venue_search_ph:'Cerca per nom o zona', venue_all:'Tots', venue_none:'Cap resultat', venue_call:'Truca', venue_wa:'WhatsApp', venue_web:'Web / reserves', venue_map:'Mapa', venue_use:'Usa per confirmar', venue_nophone:'Sense telèfon publicat', venue_disclaimer:'Dades de fonts públiques; poden estar desactualitzades. Confirma-ho sempre amb el centre.', court_form_title:'Confirmar pista', court_name_label:'Nom del club o pista', court_name_ph:'Ex: Club Pàdel X', court_link_label:'Enllaç de reserva (opcional)', court_date_label:'Data', court_time_label:'Hora', court_save:'Confirma la pista', court_save_err:'No s\'ha pogut desar', court_name_req:'Escriu el nom del lloc', court_saved:'Pista confirmada. Avisem els participants.', court_remove_title:'Vols treure la confirmació?', court_remove_msg:'El pla tornarà a mostrar-se sense pista reservada.', court_remove_btn:'Treu', sys_court:'{name} ha confirmat pista: {court}.', del_btn_profile:'Elimina el meu compte', del_title:'Vols eliminar el teu compte?', del_msg:'S\'esborraran de manera permanent el teu perfil, els teus plans, els teus missatges i les teves amistats. Aquesta acció no es pot desfer.', del_btn:'Continua', del_title2:'Última confirmació', del_msg2:'Segur que vols eliminar el teu compte per sempre?', del_btn2:'Elimina per sempre', del_error:'No s\'ha pogut eliminar el compte', push_on_btn:'Activa les notificacions', push_off_btn:'Notificacions activades · Desactiva', push_denied:'Has bloquejat les notificacions en aquest navegador. Activa-les als ajustos del lloc.', push_unsupported:'Per rebre notificacions a l\'iPhone, instal·la primer l\'app: Compartir → Afegir a la pantalla d\'inici.', push_error:'No s\'han pogut activar les notificacions', push_enabled:'Notificacions activades', theme_night:'Nit', theme_navy:'Blanc i blau', theme_green:'Blanc i verd', theme_orange:'Blanc i taronja', filter_btn:'Filtre', nav_search:'Cerca', search_ph:'Cerca per nickname', search_recent:'Recents', search_suggested:'Suggeriments per a tu', search_none:'No hem trobat ningú', blocked_chat_note:'Has bloquejat aquest usuari. Desbloqueja\'l per tornar-li a escriure.', forgot_link:'Has oblidat la contrasenya?', reset_title:'Recuperar contrasenya', reset_hint:'T\'enviarem un codi al correu universitari que vas verificar. Només funciona si el teu compte està verificat.', reset_send:'Envia el codi', reset_sent:'Codi enviat al teu correu universitari.', reset_newpass_ph:'Nova contrasenya (mín. 6 caràcters)', reset_confirm:'Canvia la contrasenya', reset_ok:'Contrasenya canviada. Ja pots entrar.', reset_err_not_verified:'Aquest compte no té un correu universitari verificat, així que no es pot recuperar per aquí.', reset_err_weak_password:'La contrasenya ha de tenir almenys 6 caràcters.', reset_err_bad_nickname:'Escriu el teu nickname.', blocked_list_title:'Usuaris bloquejats', unblock_short:'Desbloqueja', appeal_notice:'⚠ El teu perfil acumula {n} reports d\'altres usuaris i la resta veu un avís. Si creus que són falsos, pots apel·lar.', appeal_btn:'Apel·la els reports', appeal_title:'Apel·la els reports', appeal_desc:'Revisarem el teu cas. Explica\'ns per què creus que els reports no són justos.', appeal_ph:'Explica per què creus que els reports no són justos...', appeal_send:'Envia l\'apel·lació', appeal_pending:'Apel·lació enviada. La revisarem aviat.', appeal_thanks:'Apel·lació enviada', appeal_thanks_sub:'La revisarem aviat.', appeal_error:'No s\'ha pogut enviar l\'apel·lació', feedback_error:'No s\'ha pogut enviar',
     post_see_people:'Veure apuntats ({n})', part_organizer:'Organitza', part_you:'tu',
     part_hint:'Toca algú per veure el seu perfil, escriure-li o reportar-lo.',
   },
@@ -1330,7 +1378,7 @@ const TRANSLATIONS = {
     report_already:'Reported ✓', report_error:'Couldn\'t send the report',
     report_warning:'⚠ Has {n} reports from other users',
     feedback_ph:'Tell us what you\'d improve or what\'s broken...', feedback_send_btn:'Send',
-    feedback_thanks:'Thank you!', feedback_thanks_sub:'We\'ve received your message.', bio_label:'Bio', bio_ph:'Tell us something about you (max. 120 characters)', theme_label:'App style', push_label:'Notifications', pd_title:'Plan', pd_when:'When', pd_where:'Where', pd_spots:'Spots', pd_desc:'Description', pd_nodesc:'No description', pd_people:'Participants', pd_chat:'Open plan chat', pd_organizer_by:'Organised by', del_btn_profile:'Delete my account', del_title:'Delete your account?', del_msg:'Your profile, plans, messages and friendships will be permanently deleted. This cannot be undone.', del_btn:'Continue', del_title2:'Final confirmation', del_msg2:'Are you sure you want to delete your account forever?', del_btn2:'Delete forever', del_error:'Couldn\'t delete the account', push_on_btn:'Turn on notifications', push_off_btn:'Notifications on · Turn off', push_denied:'You blocked notifications in this browser. Enable them in the site settings.', push_unsupported:'To get notifications on iPhone, install the app first: Share → Add to Home Screen.', push_error:'Couldn\'t turn on notifications', push_enabled:'Notifications on', theme_night:'Night', theme_navy:'White & blue', theme_green:'White & green', theme_orange:'White & orange', filter_btn:'Filter', nav_search:'Search', search_ph:'Search by nickname', search_recent:'Recent', search_suggested:'Suggestions for you', search_none:'We couldn\'t find anyone', blocked_chat_note:'You blocked this user. Unblock them to write again.', forgot_link:'Forgot your password?', reset_title:'Reset password', reset_hint:'We\'ll send a code to the university email you verified. It only works if your account is verified.', reset_send:'Send code', reset_sent:'Code sent to your university email.', reset_newpass_ph:'New password (min. 6 characters)', reset_confirm:'Change password', reset_ok:'Password changed. You can sign in now.', reset_err_not_verified:'This account has no verified university email, so it can\'t be recovered here.', reset_err_weak_password:'Password must be at least 6 characters.', reset_err_bad_nickname:'Enter your nickname.', blocked_list_title:'Blocked users', unblock_short:'Unblock', appeal_notice:'⚠ Your profile has {n} reports from other users and others see a warning. If you think they are false, you can appeal.', appeal_btn:'Appeal the reports', appeal_title:'Appeal the reports', appeal_desc:'We will review your case. Tell us why you think the reports are unfair.', appeal_ph:'Explain why you think the reports are unfair...', appeal_send:'Send appeal', appeal_pending:'Appeal sent. We will review it soon.', appeal_thanks:'Appeal sent', appeal_thanks_sub:'We will review it soon.', appeal_error:'Couldn\'t send the appeal', feedback_error:'Couldn\'t send it',
+    feedback_thanks:'Thank you!', feedback_thanks_sub:'We\'ve received your message.', bio_label:'Bio', bio_ph:'Tell us something about you (max. 120 characters)', theme_label:'App style', push_label:'Notifications', pd_title:'Plan', pd_when:'When', pd_where:'Where', pd_spots:'Spots', pd_desc:'Description', pd_nodesc:'No description', pd_people:'Participants', pd_chat:'Open plan chat', pd_organizer_by:'Organised by', court_badge:'Court booked', court_section:'Court', court_nocourt:'Full · no court yet', court_hint_full:'You\'re all set! Find a court and confirm it here to let everyone know.', court_find:'Find a court', court_check:'Court confirmed', court_edit:'Edit details', court_book:'Book / see website', court_wait:'The organiser is looking for a court.', venue_title:'Courts & clubs', venue_search_ph:'Search by name or area', venue_all:'All', venue_none:'No results', venue_call:'Call', venue_wa:'WhatsApp', venue_web:'Website / booking', venue_map:'Map', venue_use:'Use to confirm', venue_nophone:'No phone listed', venue_disclaimer:'Data from public sources; may be out of date. Always confirm with the venue.', court_form_title:'Confirm court', court_name_label:'Club or court name', court_name_ph:'E.g. Padel Club X', court_link_label:'Booking link (optional)', court_date_label:'Date', court_time_label:'Time', court_save:'Confirm court', court_save_err:'Couldn\'t save', court_name_req:'Enter the venue name', court_saved:'Court confirmed. We\'re notifying the participants.', court_remove_title:'Remove confirmation?', court_remove_msg:'The plan will show as having no court booked.', court_remove_btn:'Remove', sys_court:'{name} confirmed a court: {court}.', del_btn_profile:'Delete my account', del_title:'Delete your account?', del_msg:'Your profile, plans, messages and friendships will be permanently deleted. This cannot be undone.', del_btn:'Continue', del_title2:'Final confirmation', del_msg2:'Are you sure you want to delete your account forever?', del_btn2:'Delete forever', del_error:'Couldn\'t delete the account', push_on_btn:'Turn on notifications', push_off_btn:'Notifications on · Turn off', push_denied:'You blocked notifications in this browser. Enable them in the site settings.', push_unsupported:'To get notifications on iPhone, install the app first: Share → Add to Home Screen.', push_error:'Couldn\'t turn on notifications', push_enabled:'Notifications on', theme_night:'Night', theme_navy:'White & blue', theme_green:'White & green', theme_orange:'White & orange', filter_btn:'Filter', nav_search:'Search', search_ph:'Search by nickname', search_recent:'Recent', search_suggested:'Suggestions for you', search_none:'We couldn\'t find anyone', blocked_chat_note:'You blocked this user. Unblock them to write again.', forgot_link:'Forgot your password?', reset_title:'Reset password', reset_hint:'We\'ll send a code to the university email you verified. It only works if your account is verified.', reset_send:'Send code', reset_sent:'Code sent to your university email.', reset_newpass_ph:'New password (min. 6 characters)', reset_confirm:'Change password', reset_ok:'Password changed. You can sign in now.', reset_err_not_verified:'This account has no verified university email, so it can\'t be recovered here.', reset_err_weak_password:'Password must be at least 6 characters.', reset_err_bad_nickname:'Enter your nickname.', blocked_list_title:'Blocked users', unblock_short:'Unblock', appeal_notice:'⚠ Your profile has {n} reports from other users and others see a warning. If you think they are false, you can appeal.', appeal_btn:'Appeal the reports', appeal_title:'Appeal the reports', appeal_desc:'We will review your case. Tell us why you think the reports are unfair.', appeal_ph:'Explain why you think the reports are unfair...', appeal_send:'Send appeal', appeal_pending:'Appeal sent. We will review it soon.', appeal_thanks:'Appeal sent', appeal_thanks_sub:'We will review it soon.', appeal_error:'Couldn\'t send the appeal', feedback_error:'Couldn\'t send it',
     post_see_people:'See who joined ({n})', part_organizer:'Organiser', part_you:'you',
     part_hint:'Tap someone to view their profile, message or report them.',
   }
@@ -2167,6 +2215,7 @@ function renderFeed(){
         <div class="post-toprow">
           ${pills}
           <span class="tagpill" style="background:transparent;color:var(--muted);">${p.mode==='search' ? t('post_search_tag') : (p.mode==='looking' ? t('post_looking_tag') : t('post_event_tag'))}</span>
+          ${(p.court_confirmed && p.mode!=='looking') ? `<span class="tagpill" style="background:var(--lime);color:var(--on-accent);">&#9989; ${t('court_badge')}</span>` : ''}
           ${urg.urgent ? `<span class="urgent">${urg.text}</span>` : `<span style="font-size:11px;color:var(--muted);font-weight:600;">${urg.text}</span>`}
         </div>
         <div class="post-title">${escapeHtml(p.title)}</div>
@@ -2277,6 +2326,7 @@ async function renderPostDetail(){
     '<div class="inforow"><span class="k">' + t('pd_when') + '</span><span class="v">' + escapeHtml(dateFmt) + '</span></div>' +
     '<div class="inforow"><span class="k">' + t('pd_where') + '</span><span class="v">' + escapeHtml(p.location || '—') + '</span></div>' +
     '<div class="inforow"><span class="k">' + t('pd_spots') + '</span><span class="v">' + escapeHtml(spotsTxt) + '</span></div>' +
+    courtBlockHtml(p, isOwner, isFull) +
     (url ? '<a class="secondary-btn" style="display:block; text-align:center; text-decoration:none; margin-top:14px;" href="' + escapeAttr(url) + '" target="_blank" rel="noopener">&#128205; ' + t('post_directions') + '</a>' : '') +
     '<div class="pd-label">' + t('pd_desc') + '</div>' +
     '<div class="pd-desc">' + escapeHtml(p.description || t('pd_nodesc')) + '</div>' +
@@ -2284,6 +2334,148 @@ async function renderPostDetail(){
     '<div class="pd-label">' + t('pd_people') + ' (' + ids.length + ')</div>' +
     people +
     '</div>';
+}
+const VENUE_SPORTS = ['padel','futbol','basquet','voley','tenis'];
+const VENUE_MUNIS = ['Barcelona', "L'Hospitalet", 'Badalona'];
+let venuesCache = null;
+let venueFilter = {sport:'all', muni:'all', q:''};
+let venuePostId = null;
+let courtPostId = null;
+async function loadVenues(){
+  if(venuesCache) return venuesCache;
+  const {data, error} = await sb.from('venues').select('*').order('name');
+  if(error) return [];
+  venuesCache = data || [];
+  return venuesCache;
+}
+function courtBlockHtml(p, isOwner, isFull){
+  if(p.mode === 'looking') return '';
+  const id = String(p.id);
+  const checkRow = function(on){
+    return '<button type="button" class="courtcheck ' + (on ? 'on' : '') + '" onclick="onCourtCheck(\'' + id + '\')"><span class="bx">' + (on ? '&#10003;' : '') + '</span>' + escapeHtml(t('court_check')) + '</button>';
+  };
+  if(p.court_confirmed){
+    const link = safeUrl(p.court_link);
+    return '<div class="courtbox ok"><div class="ct">&#9989; ' + escapeHtml(t('court_badge')) + '</div>' +
+      '<div class="cn">' + escapeHtml(p.court_name || '') + '</div>' +
+      (link ? '<a class="vbtn main" style="display:inline-block;" href="' + escapeAttr(link) + '" target="_blank" rel="noopener">' + escapeHtml(t('court_book')) + '</a>' : '') +
+      (isOwner ? checkRow(true) + '<button type="button" class="secondary-btn" style="margin-top:10px;" onclick="openCourtForm(\'' + id + '\')">' + escapeHtml(t('court_edit')) + '</button>' : '') +
+      '</div>';
+  }
+  if(!isFull) return '';
+  if(isOwner){
+    return '<div class="courtbox"><div class="ct">' + escapeHtml(t('court_section')) + '</div>' +
+      '<div class="hint" style="margin:0 0 12px;">' + escapeHtml(t('court_hint_full')) + '</div>' +
+      '<button type="button" class="primary-btn" onclick="openVenueDirectory(\'' + id + '\')">&#128269; ' + escapeHtml(t('court_find')) + '</button>' +
+      checkRow(false) + '</div>';
+  }
+  return '<div class="courtbox"><div class="ct">' + escapeHtml(t('court_nocourt')) + '</div><div class="hint" style="margin:0;">' + escapeHtml(t('court_wait')) + '</div></div>';
+}
+function fmtPhoneEs(n){
+  const d = String(n||'').replace(/\D/g,'');
+  return d.length === 9 ? d.slice(0,3) + ' ' + d.slice(3,6) + ' ' + d.slice(6) : String(n||'');
+}
+async function openVenueDirectory(postId){
+  venuePostId = postId;
+  const post = cache.posts.find(function(x){ return String(x.id) === String(postId); });
+  const mine = ((post && post.cats) || []).filter(function(c){ return VENUE_SPORTS.indexOf(c) >= 0; });
+  venueFilter = {sport: mine[0] || 'all', muni: 'all', q: ''};
+  const q = document.getElementById('venueQ'); if(q) q.value = '';
+  openScreen('venueScreen');
+  document.getElementById('venueList').innerHTML = '<div class="hint" style="padding:18px 2px;">...</div>';
+  await loadVenues();
+  renderVenueList();
+}
+function setVenueSport(v){ venueFilter.sport = v; renderVenueList(); }
+function setVenueMuni(v){ venueFilter.muni = v; renderVenueList(); }
+function renderVenueList(){
+  const sc = document.getElementById('venueSportChips');
+  const mc = document.getElementById('venueMuniChips');
+  if(!sc || !mc) return;
+  sc.innerHTML = ['all'].concat(VENUE_SPORTS).map(function(id){
+    const lbl = id === 'all' ? t('venue_all') : catLabel(catById(id));
+    return '<button type="button" class="chip ' + (venueFilter.sport === id ? 'active' : '') + '" onclick="setVenueSport(\'' + id + '\')">' + escapeHtml(lbl) + '</button>';
+  }).join('');
+  mc.innerHTML = ['all'].concat(VENUE_MUNIS).map(function(m){
+    const lbl = m === 'all' ? t('venue_all') : m;
+    return '<button type="button" class="chip ' + (venueFilter.muni === m ? 'active' : '') + '" onclick="setVenueMuni(this.getAttribute(\'data-m\'))" data-m="' + escapeAttr(m) + '">' + escapeHtml(lbl) + '</button>';
+  }).join('');
+  const qq = (venueFilter.q || '').trim().toLowerCase();
+  const list = (venuesCache || []).filter(function(v){
+    if(venueFilter.sport !== 'all' && (v.sports || []).indexOf(venueFilter.sport) < 0) return false;
+    if(venueFilter.muni !== 'all' && v.municipality !== venueFilter.muni) return false;
+    if(qq && (v.name + ' ' + (v.address || '')).toLowerCase().indexOf(qq) < 0) return false;
+    return true;
+  });
+  const box = document.getElementById('venueList');
+  if(!list.length){ box.innerHTML = '<div class="hint" style="padding:22px 2px; text-align:center;">' + escapeHtml(t('venue_none')) + '</div>'; return; }
+  box.innerHTML = list.map(function(v){
+    const ph = String(v.phone || '').replace(/\D/g,'');
+    const web = safeUrl(v.web);
+    const map = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(v.name + ' ' + (v.address || '') + ' ' + v.municipality);
+    let btns = '';
+    if(ph.length === 9){
+      btns += '<a class="vbtn" href="tel:+34' + ph + '">&#128222; ' + escapeHtml(fmtPhoneEs(ph)) + '</a>';
+      if(/^[67]/.test(ph)) btns += '<a class="vbtn" href="https://wa.me/34' + ph + '" target="_blank" rel="noopener">' + escapeHtml(t('venue_wa')) + '</a>';
+    } else {
+      btns += '<span class="hint" style="margin:0; align-self:center;">' + escapeHtml(t('venue_nophone')) + '</span>';
+    }
+    if(web) btns += '<a class="vbtn" href="' + escapeAttr(web) + '" target="_blank" rel="noopener">' + escapeHtml(t('venue_web')) + '</a>';
+    btns += '<a class="vbtn" href="' + escapeAttr(map) + '" target="_blank" rel="noopener">&#128205; ' + escapeHtml(t('venue_map')) + '</a>';
+    btns += '<button type="button" class="vbtn main" onclick="useVenue(' + Number(v.id) + ')">' + escapeHtml(t('venue_use')) + '</button>';
+    return '<div class="venuecard"><div class="vn">' + escapeHtml(v.name) + '</div><div class="va">' + escapeHtml((v.address || '') + (v.postal ? ' · ' + v.postal : '') + ' · ' + v.municipality) + '</div><div class="vbtns">' + btns + '</div></div>';
+  }).join('');
+}
+function useVenue(id){
+  const v = (venuesCache || []).find(function(x){ return Number(x.id) === Number(id); });
+  if(!v) return;
+  closeScreen('venueScreen');
+  openCourtForm(venuePostId, {name: v.name, link: safeUrl(v.web)});
+}
+function openCourtForm(postId, pre){
+  const post = cache.posts.find(function(x){ return String(x.id) === String(postId); });
+  if(!post) return;
+  courtPostId = post.id;
+  document.getElementById('cName').value = (pre && pre.name) || post.court_name || '';
+  document.getElementById('cLink').value = (pre && pre.link) || post.court_link || '';
+  document.getElementById('cDate').value = post.event_date || '';
+  document.getElementById('cTime').value = post.event_time ? String(post.event_time).slice(0,5) : '';
+  openScreen('courtScreen');
+}
+async function onCourtCheck(postId){
+  const post = cache.posts.find(function(x){ return String(x.id) === String(postId); });
+  if(!post || !myProfile || post.creator_id !== myProfile.id) return;
+  if(post.court_confirmed){
+    const ok = await showConfirm(t('court_remove_title'), t('court_remove_msg'), t('court_remove_btn'));
+    if(!ok) return;
+    const {error} = await sb.from('posts').update({court_confirmed:false}).eq('id', post.id).eq('creator_id', myProfile.id);
+    if(error){ showToast(t('court_save_err'), '', null); return; }
+    await refreshData();
+  } else {
+    openCourtForm(postId);
+  }
+}
+async function saveCourt(){
+  const post = cache.posts.find(function(x){ return String(x.id) === String(courtPostId); });
+  if(!post || !myProfile || post.creator_id !== myProfile.id) return;
+  const name = document.getElementById('cName').value.trim();
+  if(!name){ showToast(t('court_name_req'), '', null); return; }
+  const raw = document.getElementById('cLink').value.trim();
+  const link = raw ? safeUrl(raw) : '';
+  const date = document.getElementById('cDate').value;
+  const time = document.getElementById('cTime').value;
+  const upd = {court_confirmed:true, court_name:name.slice(0,100), court_link:link.slice(0,300)};
+  if(date){ upd.event_date = date; if(post.end_date && post.end_date <= date) upd.end_date = null; }
+  if(time) upd.event_time = time;
+  const wasConfirmed = !!post.court_confirmed;
+  const {error} = await sb.from('posts').update(upd).eq('id', post.id).eq('creator_id', myProfile.id);
+  if(error){ showToast(t('court_save_err'), '', null); return; }
+  if(!wasConfirmed){
+    try{ await sb.from('post_messages').insert({post_id: post.id, sender_id: myProfile.id, is_system:true, text: t('sys_court', {name: dn(myProfile), court: name.slice(0,100)})}); }catch(e){}
+  }
+  closeScreen('courtScreen');
+  await refreshData();
+  showToast(t('court_saved'), '', null);
 }
 async function toggleJoin(id){
   if(!myProfile) return;
